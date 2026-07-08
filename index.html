@@ -69,6 +69,8 @@
   .cts .hdr-title{font-size:15px;font-weight:700;line-height:1.15;font-family:'Saira';}
   .cts .hdr-sub{font-size:11.5px;opacity:.7;}
   .cts .logout{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;}
+  .cts .hdr-home{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:rgba(255,255,255,.8);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;margin-right:8px;white-space:nowrap;}
+  .cts .hdr-home:hover{color:#fff;border-color:var(--accent);}
   .cts .tabs{display:flex;gap:4px;margin-top:14px;background:rgba(255,255,255,.1);border-radius:11px;padding:4px;}
   .cts .tab{flex:1;border:none;background:transparent;color:rgba(255,255,255,.7);font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 4px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .cts .tab.active{background:#fff;color:var(--ink);}
@@ -640,7 +642,8 @@ async function resolveOrg(){
           <button class="role-btn" id="g-cmd"><div class="role-ico" style="background:var(--navy-soft);">\u{1F4CA}</div><div><div class="role-name">Command View</div><div class="role-desc">Brendan & Lourie · all RMs, problem areas, daily changes</div></div></button>
           <button class="role-btn" id="g-pay"><div class="role-ico" style="background:#EFE3C7;">\u{1F4B0}</div><div><div class="role-name">Payroll</div><div class="role-desc">Brendan & Lourie · RM commissions & payouts</div></div></button>
         </div>
-        <div style="text-align:center;margin-top:18px;border-top:1px solid var(--line);padding-top:12px;">
+        <div style="text-align:center;margin-top:18px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+          <a href="https://cartrack-commercial.github.io/" style="color:var(--accent-ink);font-size:12.5px;font-weight:600;text-decoration:none;">&#8592; Back to launcher</a>
           <button class="link-btn" id="g-op" style="color:var(--faint);font-size:11.5px;">Operator access</button>
         </div>
       </div></div>`;
@@ -805,7 +808,7 @@ async function resolveOrg(){
         <div class="hdr-top">
           <div class="hdr-id"><div class="hdr-mark">${esc(rmName(slug)[0])}</div>
             <div><div class="hdr-title">${esc(rmName(slug))}</div><div class="hdr-sub">Cartrack Commercial RM</div></div></div>
-          <button class="logout" id="lo">Sign out</button>
+          <a class="hdr-home" href="https://cartrack-commercial.github.io/" title="Back to launcher">&#8592; Home</a><button class="logout" id="lo">Sign out</button>
         </div>
         <div class="tabs">
           <button class="tab ${S.tab==='mine'?'active':''}" id="t-mine">My Pipeline</button>
@@ -1220,7 +1223,7 @@ async function resolveOrg(){
       <div class="hdr hdr-cmd">
         <div class="hdr-top"><div class="hdr-id"><div class="hdr-mark">\u{1F4CA}</div>
           <div><div class="hdr-title">Command View</div><div class="hdr-sub">${viewerName()} · full team visibility</div></div></div>
-          <button class="logout" id="lo">Sign out</button></div>
+          <a class="hdr-home" href="https://cartrack-commercial.github.io/" title="Back to launcher">&#8592; Home</a><button class="logout" id="lo">Sign out</button></div>
         <div class="tabs">
           <button class="tab ${S.tab==='overview'?'active':''}" id="t-ov">Overview</button>
           <button class="tab ${S.tab==='clients'?'active':''}" id="t-cl">Active Clients</button>
@@ -1543,7 +1546,7 @@ async function resolveOrg(){
       <div class="hdr hdr-cmd">
         <div class="hdr-top"><div class="hdr-id"><div class="hdr-mark">\u{1F9ED}</div>
           <div><div class="hdr-title">RM Manager</div><div class="hdr-sub">Bernard · team progress & book of business</div></div></div>
-          <button class="logout" id="lo">Sign out</button></div>
+          <a class="hdr-home" href="https://cartrack-commercial.github.io/" title="Back to launcher">&#8592; Home</a><button class="logout" id="lo">Sign out</button></div>
         <div class="tabs">
           <button class="tab ${S.tab==='progress'?'active':''}" id="t-pg">Team Progress</button>
           <button class="tab ${S.tab==='book'?'active':''}" id="t-bk">Portfolio</button>
@@ -1900,7 +1903,7 @@ async function resolveOrg(){
       <div class="hdr hdr-pay">
         <div class="hdr-top"><div class="hdr-id"><div class="hdr-mark">\u{1F4B0}</div>
           <div><div class="hdr-title">RM Payroll</div><div class="hdr-sub">${viewerName()} · RM commissions</div></div></div>
-          <button class="logout" id="lo">Sign out</button></div>
+          <a class="hdr-home" href="https://cartrack-commercial.github.io/" title="Back to launcher">&#8592; Home</a><button class="logout" id="lo">Sign out</button></div>
         <div class="tabs"><button class="tab ${S.tab==='enter'?'active':''}" id="t-en">Enter Commission</button>
           <button class="tab ${S.tab==='summary'?'active':''}" id="t-su">Payout Summary</button></div>
       </div><div id="body"></div>
