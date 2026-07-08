@@ -302,7 +302,7 @@ async function resolveOrg(){
   const zar=n=>'R\u00A0'+(Number(n)||0).toLocaleString('en-ZA',{maximumFractionDigits:0});
   const zar2=n=>'R\u00A0'+(Number(n)||0).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc=s=>(s==null?'':String(s)).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const rmName=slug=>(RMS.find(r=>r.slug===slug)||{}).name||slug;
+  const rmName=slug=>slug==='__house'?'Cartrack (House)':((RMS.find(r=>r.slug===slug)||{}).name||slug);
   const rmFull=slug=>(RMS.find(r=>r.slug===slug)||{}).full||slug;
 
   // ---------- STORAGE (Supabase-backed, with local session fallback) ----------
@@ -470,7 +470,7 @@ async function resolveOrg(){
   async function loadPortfolio(slug){const v=await sGet('portfolio:'+slug);S.portfolio[slug]=v||[];S.portLoaded[slug]=true;}
   async function savePortfolio(slug){return sSet('portfolio:'+slug,S.portfolio[slug]);}
   async function loadAllPortfolio(){await Promise.all(RMS.map(r=>S.portLoaded[r.slug]?0:loadPortfolio(r.slug)));}
-  async function loadHouse(){const v=await sGet('deals:__house');S.house=v||[];}
+  async function loadHouse(){const v=await sGet('deals:__house');S.house=v||[];S.deals['__house']=S.house;/* alias so the shared deal modal/save machinery works with slug '__house' */}
   async function saveHouse(){return sSet('deals:__house',S.house);}
   // Not-successful (lost) leads — parked in the config table per RM, so no deals-table migration.
   async function loadLost(slug){const v=await sGet('lost:'+slug);S.lost[slug]=v||[];S.lostLoaded[slug]=true;}
@@ -977,7 +977,7 @@ async function resolveOrg(){
     </div>${S.showArch?'':'<button class="fab" id="fab" aria-label="Add prospect">+</button>'}`;
   }
 
-  function dealCard(slug,d,editable){
+  function dealCard(slug,d,editable,noLost){
     const si=d.stage||1;let rail='';
     for(let i=1;i<=7;i++){const done=i<si,cur=i===si;
       rail+=`<div class="rail-w"><div class="node ${done?'done':''} ${cur?'cur':''}" style="${cur?`background:var(--${d.health});border-color:var(--${d.health});`:''}"></div>${i<7?`<div class="seg ${done?'done':''}"></div>`:''}</div>`;}
@@ -993,7 +993,7 @@ async function resolveOrg(){
       <div class="drow"><span class="k">Est. premium</span><span class="v prem">${zar(d.premium)}</span></div>
       <div class="drow"><span class="k">Days in stage</span><span class="v mono">${daysSince(d.stageEntryDate)}</span></div>
       ${stale?`<div class="stale-tag">\u26A0 ${daysSince(d.lastActivity||d.stageEntryDate)} days no movement</div>`:''}
-      ${editable?`<div class="cta"><button class="btn btn-primary" data-edit="${d.id}">Update</button><button class="btn btn-ghost" data-arch="${d.id}">${d.archived?'Restore':'Archive'}</button>${!d.archived?`<button class="btn btn-ghost" data-lost="${d.id}" style="color:var(--red);">Not successful</button>`:''}</div>`:''}
+      ${editable?`<div class="cta"><button class="btn btn-primary" data-edit="${d.id}">Update</button><button class="btn btn-ghost" data-arch="${d.id}">${d.archived?'Restore':'Archive'}</button>${(!d.archived&&!noLost)?`<button class="btn btn-ghost" data-lost="${d.id}" style="color:var(--red);">Not successful</button>`:''}</div>`:''}
     </div>`;
   }
 
@@ -1228,16 +1228,18 @@ async function resolveOrg(){
           <button class="tab ${S.tab==='overview'?'active':''}" id="t-ov">Overview</button>
           <button class="tab ${S.tab==='clients'?'active':''}" id="t-cl">Active Clients</button>
           <button class="tab ${S.tab==='pipeline'?'active':''}" id="t-pl">Pipeline Deals</button>
+          <button class="tab ${S.tab==='house'?'active':''}" id="t-ho">House Deals</button>
           <button class="tab ${S.tab==='problems'?'active':''}" id="t-pr">Problem Areas</button>
           <button class="tab ${S.tab==='lost'?'active':''}" id="t-ls">Not Successful</button>
           <button class="tab ${S.tab==='changes'?'active':''}" id="t-ch">Yesterday</button>
           <button class="tab ${S.tab==='settings'?'active':''}" id="t-se">Access</button>
         </div>
-      </div><div id="body"></div>${S.confirmModal?renderConfirmModal():''}${S.toast?`<div class="toast">${esc(S.toast)}</div>`:''}`;
+      </div><div id="body"></div>${S.modal?renderModal():''}${S.confirmModal?renderConfirmModal():''}${S.toast?`<div class="toast">${esc(S.toast)}</div>`:''}`;
     document.getElementById('lo').onclick=logout;
     document.getElementById('t-ov').onclick=()=>{S.tab='overview';render();};
     document.getElementById('t-cl').onclick=()=>{S.tab='clients';render();};
     document.getElementById('t-pl').onclick=()=>{S.tab='pipeline';render();};
+    document.getElementById('t-ho').onclick=()=>{S.tab='house';S.showArch=false;render();};
     document.getElementById('t-pr').onclick=()=>{S.tab='problems';render();};
     document.getElementById('t-ls').onclick=()=>{S.tab='lost';render();};
     document.getElementById('t-ch').onclick=()=>{S.tab='changes';render();};
@@ -1246,10 +1248,12 @@ async function resolveOrg(){
     if(S.tab==='overview'){body.innerHTML=cmdOverview();wireCmdOverview();}
     else if(S.tab==='clients'){body.innerHTML=cmdClients();wireCmdClients();}
     else if(S.tab==='pipeline'){body.innerHTML=cmdPipeline();wireCmdPipeline();}
+    else if(S.tab==='house'){body.innerHTML=cmdHouse();wireCmdHouse();}
     else if(S.tab==='problems')body.innerHTML=cmdProblems();
     else if(S.tab==='lost'){body.innerHTML=lostView();wireLostView();}
     else if(S.tab==='changes'){body.innerHTML=cmdChanges();wireCmdChanges();}
     else{body.innerHTML=cmdSettings();wireCmdSettings();}
+    if(S.modal)wireModal();
     if(S.confirmModal)wireConfirmModal();
   }
 
@@ -1390,6 +1394,35 @@ async function resolveOrg(){
   function wireCmdPipeline(){
     document.querySelectorAll('[data-cprm]').forEach(b=>b.onclick=()=>{S._cmdPipeRM=b.dataset.cprm;render();});
     wireSearch('cmdpipe-search','.change-item');
+  }
+
+  // ---- House Deals: the Cartrack team pipeline. Brendan & Lourie edit these. ----
+  // Internal, team-sourced leads that don't belong to a single RM (no commission
+  // split). Full add / update / archive, using the shared deal card + modal.
+  function cmdHouse(){
+    const all=S.house||[];
+    const active=all.filter(d=>!d.archived), arch=all.filter(d=>d.archived);
+    const list=S.showArch?arch:active;
+    const totalPrem=active.reduce((s,d)=>s+(+d.premium||0),0);
+    return `<div class="wrap">
+      <div class="note">The <b>Cartrack House</b> pipeline — internal, team-sourced leads not owned by a single RM (no commission split). ${esc(viewerName())}, you can add, update and archive these here; they show across the whole-team pipeline, overview and daily report.</div>
+      <div class="kpis" style="grid-template-columns:repeat(2,1fr);">
+        <div class="kpi"><div class="kpi-l">${S.showArch?'Archived':'Active'} house deals</div><div class="kpi-v">${list.length}</div></div>
+        <div class="kpi"><div class="kpi-l">House pipeline value</div><div class="kpi-v mono" style="font-size:16px;">${zar(totalPrem)}</div></div>
+      </div>
+      ${(list.length>1)?searchBox('house-search','Search house deals by name, industry or next step…'):''}
+      <div class="sec-title">${S.showArch?'Archived':'Active'} house deals (<span id="pipe-count">${list.length}</span>)</div>
+      ${list.length===0?`<div class="empty"><div class="disp">${S.showArch?'Nothing archived':'No house deals yet'}</div><div>${S.showArch?'':'Tap + to add the first house lead.'}</div></div>`:list.map(d=>dealCard('__house',d,true,true)).join('')}
+      <div id="pipe-nomatch" class="empty" style="display:none;"><div class="disp">No matches</div><div>No house deals match your search.</div></div>
+      <div style="text-align:center;margin-top:8px;"><button class="btn btn-ghost" id="arch-t">${S.showArch?'← Back to active':`Show archived (${arch.length})`}</button></div>
+    </div>${S.showArch?'':'<button class="fab" id="fab" aria-label="Add house deal">+</button>'}`;
+  }
+  function wireCmdHouse(){
+    const at=document.getElementById('arch-t');if(at)at.onclick=()=>{S.showArch=!S.showArch;render();};
+    const fab=document.getElementById('fab');if(fab)fab.onclick=()=>{S.modal={mode:'add',slug:'__house'};render();};
+    document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const d=(S.house||[]).find(x=>x.id===b.dataset.edit);S.modal={mode:'edit',slug:'__house',deal:d};render();});
+    document.querySelectorAll('[data-arch]').forEach(b=>b.onclick=async()=>{const d=(S.house||[]).find(x=>x.id===b.dataset.arch);if(!d)return;d.archived=!d.archived;d.updatedAt=nowISO();await saveHouse();logChange('__house',`${d.archived?'Archived':'Restored'}: ${d.prospectName}`,'arch');render();toast(d.archived?'Archived':'Restored');});
+    wireSearch('house-search','.js-deal');
   }
 
   function cmdProblems(){
