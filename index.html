@@ -758,6 +758,8 @@ async function resolveOrg(){
       const go=async()=>{
         const v=document.getElementById('mpass').value;
         if(v!==S.meta.bernardPass && v!==S.meta.brendanPass && v!==OPERATOR_CODE){S.err='Incorrect passcode';render();return;}
+        if(v===S.meta.bernardPass){S.logins['bernard-mgr']=nowISO();saveLogins();}       // Bernard's Manager sign-in
+        else if(v===S.meta.brendanPass){S.logins['brendan']=nowISO();saveLogins();}      // Brendan (all-systems), not operator
         S.role='mgr';S.rm='bernard';S.tab='progress';S.screen='app';S.gateStep=null;S.err='';render();
       };
       document.getElementById('mpass-go').onclick=go;
@@ -1516,7 +1518,7 @@ async function resolveOrg(){
           ${S.pins[r.slug]?`<button class="link-btn" data-reset="${r.slug}" style="color:var(--red);align-self:flex-start;">Reset PIN</button>`:'<span style="color:var(--faint);font-size:12px;">—</span>'}</div>`;}).join('')}</div>
       <div class="sec-title">Leadership last sign-in</div>
       <div class="card"><div class="help" style="margin-bottom:10px;">Command View &amp; Payroll sign-ins. Opening a view with the operator master key isn't counted here.</div>
-        ${[['lourie','Lourie','Project Manager · Command View & Payroll'],['brendan','Brendan','Principal · Command View & Payroll']].map(([k,nm,role])=>{
+        ${[['lourie','Lourie','Project Manager · Command View & Payroll'],['bernard-mgr','Bernard','RM Manager · Team progress & book'],['brendan','Brendan','Principal · Command View & Payroll']].map(([k,nm,role])=>{
           const seen=S.logins&&S.logins[k];const stale=seen&&(Date.now()-new Date(seen).getTime())>7*864e5;
           return `<div class="pay-line"><span><b>${esc(nm)}</b> <span style="color:var(--faint);">· ${esc(role)}</span>
           <div class="change-time" style="margin-top:2px;${!seen||stale?'color:var(--amber);':''}">Last sign-in: ${esc(fmtLastSeen(seen))}</div></span></div>`;}).join('')}</div>
