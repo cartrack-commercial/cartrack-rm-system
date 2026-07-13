@@ -295,7 +295,10 @@ async function resolveOrg(){
   // ---------- STATE ----------
   let S={screen:'gate',role:null,rm:null,tab:null,deals:{},loaded:{},portfolio:{},portLoaded:{},house:[],pins:{},meta:{},modal:null,confirmModal:null,toast:null,showArch:false,lbMetric:'premium',reportOpen:false,payroll:{month:'',rows:[]},gateStep:null,err:'',pendingImport:null,lost:{},lostLoaded:{},lostModal:null,viewer:null,logins:{}};
   const root=document.getElementById('cts-root');
-  const uid=()=>'d_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  // Real UUIDs so a new item's id in the app IS its database row id (the merge-safe
+  // save layer below relies on that to upsert per-row instead of rewriting the list).
+  const uid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID()
+    :'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);});
   const today=()=>new Date().toISOString().slice(0,10);
   const nowISO=()=>new Date().toISOString();
   const daysSince=s=>{if(!s)return 0;const d=new Date(s.slice(0,10)+'T00:00:00');return Math.max(Math.floor((new Date().setHours(0,0,0,0)-d.getTime())/864e5),0);};
@@ -335,7 +338,7 @@ async function resolveOrg(){
   function _dealAppToRow(d,slug){return {org_id:ORG_ID, rm_slug:slug, prospect:d.prospectName||'', industry:d.industry||null,
     portfolio_size:d.portfolioSize||null, stage:d.stage||1, next_step:d.nextStep||null, roadblocks:d.roadblocks||null,
     premium:+d.premium||0, lead_source:d.leadSource||null, health:d.health||'amber',
-    stage_entry:d.stageEntryDate||null, last_activity:d.lastActivity||null, archived:!!d.archived, updated_at:nowISO()};}
+    stage_entry:d.stageEntryDate||null, last_activity:d.lastActivity||null, archived:!!d.archived, updated_at:d.updatedAt||nowISO()};}
   function _portRowToApp(r){return {id:r.id, client:r.client, rm:r.rm_slug, premium:+r.premium||0, commRate:(r.comm_rate!=null?+r.comm_rate:6.25),
     commission:+r.commission||0, policy:r.policy_no||'', insurer:r.insurer||'', status:r.status||'Existing', renewal:r.renewal||'',
     lastVisit:r.last_visit||'', movement:r.movement||'', impact:+r.impact||0, notes:r.notes||'', health:r.health||'green', activity:r.activity_json||[]};}
@@ -344,15 +347,27 @@ async function resolveOrg(){
     status:p.status||'Existing', renewal:p.renewal||null, last_visit:p.lastVisit||null, movement:p.movement||null,
     impact:+p.impact||0, notes:p.notes||null, health:p.health||'green', activity_json:p.activity||[]};}
 
+  // Row ids this session has actually seen on the server, per storage key. The save
+  // layer deletes ONLY ids in this set that are missing from the outgoing list — so a
+  // stale tab can never wipe rows another device added after our last fetch.
+  const _known={};
+  const _knownSet=k=>_known[k]||(_known[k]=new Set());
+  const _isUUID=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  const _ts=s=>{const t=Date.parse(s||'');return isNaN(t)?0:t;};
+
   async function _sbGet(route){
     const org=await resolveOrg(); if(!org) return null;
     if(route.kind==='deals'){
       const {data,error}=await sb.from('deals').select('*').eq('org_id',org).eq('rm_slug',route.slug);
-      if(error)throw error; return (data||[]).map(_dealRowToApp);
+      if(error)throw error;
+      _known['deals:'+route.slug]=new Set((data||[]).map(r=>r.id));
+      return (data||[]).map(_dealRowToApp);
     }
     if(route.kind==='portfolio'){
       const {data,error}=await sb.from('portfolio').select('*').eq('org_id',org).eq('rm_slug',route.slug);
-      if(error)throw error; return (data||[]).map(_portRowToApp);
+      if(error)throw error;
+      _known['portfolio:'+route.slug]=new Set((data||[]).map(r=>r.id));
+      return (data||[]).map(_portRowToApp);
     }
     if(route.kind==='payroll'){
       const {data,error}=await sb.from('payroll').select('*').eq('org_id',org).eq('month',route.month).maybeSingle();
@@ -369,31 +384,70 @@ async function resolveOrg(){
       if(error)throw error; return data?data.value:null;
     }
     if(route.kind==='changes'){
-      const {data,error}=await sb.from('config').select('value').eq('org_id',org).eq('key','changes:'+route.date).maybeSingle();
-      if(error)throw error; return data?data.value:null;
+      // Changes are stored one config row per RM per day ('changes:<date>:<slug>') so RMs
+      // can't overwrite each other's log. Reads aggregate every row for the date prefix —
+      // which also still picks up the old shared 'changes:<date>' rows.
+      const {data,error}=await sb.from('config').select('key,value').eq('org_id',org).like('key','changes:'+route.date+'%');
+      if(error)throw error;
+      if(!data||!data.length) return null;
+      const all=[];
+      data.forEach(r=>{(Array.isArray(r.value)?r.value:[]).forEach(x=>all.push(x));});
+      all.sort((a,b)=>String(a.at||'').localeCompare(String(b.at||'')));
+      return all;
     }
     if(route.kind==='lost'){
       const {data,error}=await sb.from('config').select('value').eq('org_id',org).eq('key','lost:'+route.slug).maybeSingle();
-      if(error)throw error; return data?data.value:null;
+      if(error)throw error;
+      const v=data?data.value:null;
+      if(Array.isArray(v))_known['lost:'+route.slug]=new Set(v.map(it=>it.id));
+      return v;
     }
     return null;
   }
 
+  // Merge-safe save for the deals/portfolio tables. The old delete-everything-then-
+  // reinsert approach meant a tab holding stale data silently reverted every change made
+  // from any other device since that tab last loaded. Now:
+  //   - delete only rows THIS session saw on the server and intentionally removed
+  //   - never resurrect a row another device deleted
+  //   - for deals, never overwrite a row the server holds a newer edit of
+  //   - upsert per row, then re-read so the caller adopts what everyone now sees
+  async function _mergeSaveTable(table,route,val){
+    const key=table+':'+route.slug, org=ORG_ID;
+    const toRow=table==='deals'?_dealAppToRow:_portAppToRow;
+    const toApp=table==='deals'?_dealRowToApp:_portRowToApp;
+    const cur=await sb.from(table).select('*').eq('org_id',org).eq('rm_slug',route.slug);
+    if(cur.error)throw cur.error;
+    const byId=new Map((cur.data||[]).map(r=>[r.id,r]));
+    const known=_knownSet(key);
+    const outIds=new Set((val||[]).filter(d=>_isUUID(d.id)).map(d=>d.id));
+    const toDelete=[...known].filter(id=>!outIds.has(id)&&byId.has(id));
+    if(toDelete.length){
+      const {error}=await sb.from(table).delete().eq('org_id',org).eq('rm_slug',route.slug).in('id',toDelete);
+      if(error)throw error;
+    }
+    const upserts=[],inserts=[];
+    for(const d of (val||[])){
+      const r=toRow(d,route.slug);
+      if(_isUUID(d.id)){
+        const server=byId.get(d.id);
+        if(!server&&known.has(d.id))continue;                       // deleted on another device — stays gone
+        if(server&&table==='deals'&&_ts(server.updated_at)>_ts(d.updatedAt))continue; // server row is newer — keep it
+        r.id=d.id;upserts.push(r);
+      }else inserts.push(r);                                        // legacy non-UUID id — let the DB assign one
+    }
+    if(upserts.length){const {error}=await sb.from(table).upsert(upserts,{onConflict:'id'});if(error)throw error;}
+    if(inserts.length){const {error}=await sb.from(table).insert(inserts);if(error)throw error;}
+    const fresh=await sb.from(table).select('*').eq('org_id',org).eq('rm_slug',route.slug);
+    if(fresh.error)throw fresh.error;
+    _known[key]=new Set((fresh.data||[]).map(r=>r.id));
+    return (fresh.data||[]).map(toApp);
+  }
+
   async function _sbSet(route,val){
     const org=await resolveOrg(); if(!org) throw new Error('no org');
-    if(route.kind==='deals'){
-      // replace this RM's deals with the incoming array (app always hands us the full list)
-      await sb.from('deals').delete().eq('org_id',org).eq('rm_slug',route.slug);
-      const rows=(val||[]).map(d=>{const r=_dealAppToRow(d,route.slug); if(d.id&&/^[0-9a-f-]{36}$/i.test(d.id))r.id=d.id; return r;});
-      if(rows.length){const {error}=await sb.from('deals').insert(rows); if(error)throw error;}
-      return true;
-    }
-    if(route.kind==='portfolio'){
-      await sb.from('portfolio').delete().eq('org_id',org).eq('rm_slug',route.slug);
-      const rows=(val||[]).map(p=>{const r=_portAppToRow(p,route.slug); if(p.id&&/^[0-9a-f-]{36}$/i.test(p.id))r.id=p.id; return r;});
-      if(rows.length){const {error}=await sb.from('portfolio').insert(rows); if(error)throw error;}
-      return true;
-    }
+    if(route.kind==='deals')return _mergeSaveTable('deals',route,val);
+    if(route.kind==='portfolio')return _mergeSaveTable('portfolio',route,val);
     if(route.kind==='payroll'){
       const {error}=await sb.from('payroll').upsert({org_id:org, month:route.month, rows:val.rows||[], salary:val.salary||{}, updated_at:nowISO()},{onConflict:'org_id,month'});
       if(error)throw error; return true;
@@ -412,8 +466,20 @@ async function resolveOrg(){
       if(error)throw error; return true;
     }
     if(route.kind==='lost'){
-      const {error}=await sb.from('config').upsert({org_id:org, key:'lost:'+route.slug, value:val},{onConflict:'org_id,key'});
-      if(error)throw error; return true;
+      // Same stale-tab protection as the tables: keep server items we never saw
+      // (added elsewhere), drop only items we knew about and explicitly removed.
+      const key='lost:'+route.slug;
+      const {data,error}=await sb.from('config').select('value').eq('org_id',org).eq('key',key).maybeSingle();
+      if(error)throw error;
+      const server=Array.isArray(data&&data.value)?data.value:[];
+      const known=_knownSet(key);
+      const ourIds=new Set((val||[]).map(it=>it.id));
+      const merged=(val||[]).slice();
+      server.forEach(it=>{if(!ourIds.has(it.id)&&!known.has(it.id))merged.push(it);});
+      const {error:e2}=await sb.from('config').upsert({org_id:org, key, value:merged},{onConflict:'org_id,key'});
+      if(e2)throw e2;
+      _known[key]=new Set(merged.map(it=>it.id));
+      return merged;
     }
     return true;
   }
@@ -425,20 +491,62 @@ async function resolveOrg(){
     }
     return _memGet(k);
   }
-  async function sSet(k,v){
-    const json=JSON.stringify(v);
-    _memSet(k,json); // always mirror locally so the session stays consistent even if the write fails
-    if(sb){
-      try{await _sbSet(_route(k),v); return true;}
-      catch(e){console.warn('[Cartrack] write fell back to local:',k,e.message); return true;}
+  // Failed server writes are queued (latest local value wins) and retried every 25s.
+  // A fixed banner tells the user their changes haven't reached the server yet — the old
+  // behaviour reported success while the change never left this device.
+  const _pendingWrites={};
+  const _writeChain={};
+  function _syncBanner(){
+    const n=Object.keys(_pendingWrites).length;
+    let el=document.getElementById('sync-banner');
+    if(!n){if(el)el.remove();return;}
+    if(!el){
+      el=document.createElement('div');el.id='sync-banner';
+      el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#B3261E;color:#fff;font:600 13px/1.45 system-ui,sans-serif;padding:10px 16px;text-align:center;box-shadow:0 -4px 14px rgba(0,0,0,.25);';
+      document.body.appendChild(el);
     }
-    return true;
-    if(_hasStore()){
-      try{const r=await window.storage.set(k,json,true);return !!r;}
-      catch(e){return true;/* mem write already succeeded */}
-    }
-    return true;
+    el.textContent='⚠ Changes not saved to the server yet — retrying automatically. Keep this page open.';
   }
+  async function _sbSetAdopt(k,v){
+    const out=await _sbSet(_route(k),v);
+    if(out!==true&&out!=null){_memSet(k,JSON.stringify(out));_adoptMerged(k,out);}
+    return out;
+  }
+  // Reflect a merged server result back into app state so the UI shows what everyone sees.
+  function _adoptMerged(k,out){
+    if(!Array.isArray(out))return;
+    if(k==='deals:__house'){S.house=out;S.deals['__house']=out;return;}
+    if(k.startsWith('deals:')){S.deals[k.slice(6)]=out;return;}
+    if(k.startsWith('portfolio:')){S.portfolio[k.slice(10)]=out;return;}
+    if(k.startsWith('lost:')){S.lost[k.slice(5)]=out;return;}
+  }
+  async function sSet(k,v){
+    _memSet(k,JSON.stringify(v)); // always mirror locally so the session stays consistent even if the write fails
+    if(!sb)return true;
+    const run=async()=>{
+      try{
+        const out=await _sbSetAdopt(k,v);
+        delete _pendingWrites[k];_syncBanner();
+        return out;
+      }catch(e){
+        console.warn('[Cartrack] write failed, queued for retry:',k,e.message);
+        _pendingWrites[k]=true;_syncBanner();
+        return false;
+      }
+    };
+    // Serialize writes per key so two quick saves can't interleave their read-merge-write.
+    const p=(_writeChain[k]||Promise.resolve()).then(run,run);
+    _writeChain[k]=p;
+    return p;
+  }
+  setInterval(()=>{
+    if(!sb)return;
+    const keys=Object.keys(_pendingWrites);
+    if(!keys.length)return;
+    Promise.all(keys.map(k=>sSet(k,_memGet(k)))).then(res=>{
+      if(res.every(r=>r!==false)&&!Object.keys(_pendingWrites).length)toast('Connection restored — your changes are saved');
+    });
+  },25000);
   async function loadRM(slug){const v=await sGet('deals:'+slug);S.deals[slug]=v||[];S.loaded[slug]=true;}
   async function saveRM(slug){return sSet('deals:'+slug,S.deals[slug]);}
   async function loadAll(){await Promise.all(RMS.map(r=>S.loaded[r.slug]?0:loadRM(r.slug)));}
@@ -479,6 +587,37 @@ async function resolveOrg(){
   function allLost(){const o=[];RMS.forEach(r=>(S.lost[r.slug]||[]).forEach(l=>o.push(Object.assign({rmSlug:r.slug,rmName:r.name},l))));
     return o.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));}
 
+  // ---------- LIVE REFRESH ----------
+  // Data used to be fetched once per page-load and never again — a tab left open (very
+  // common on phones) worked on days-old data forever. Re-pull everything that's loaded
+  // whenever the tab comes back into view, and every 60s while it stays visible.
+  let _lastRefresh=0,_refreshing=false;
+  async function refreshFromServer(force){
+    if(!sb||_refreshing)return;
+    if(S.screen==='gate')return;
+    if(S.modal||S.confirmModal||S.lostModal)return;               // never yank state under an open editor
+    if(Object.keys(_pendingWrites).length)return;                 // local edits not synced yet — don't overwrite them
+    const ae=document.activeElement;
+    if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT'))return; // mid-typing
+    if(!force&&Date.now()-_lastRefresh<20000)return;
+    _lastRefresh=Date.now();_refreshing=true;
+    try{
+      const jobs=[loadHouse()];
+      RMS.forEach(r=>{
+        if(S.loaded[r.slug])jobs.push(loadRM(r.slug));
+        if(S.portLoaded[r.slug])jobs.push(loadPortfolio(r.slug));
+        if(S.lostLoaded[r.slug])jobs.push(loadLost(r.slug));
+      });
+      await Promise.all(jobs);
+      render();
+    }catch(e){console.warn('[Cartrack] background refresh failed:',e.message);}
+    finally{_refreshing=false;}
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshFromServer(true);});
+  window.addEventListener('focus',()=>refreshFromServer(false));
+  window.addEventListener('pageshow',e=>{if(e.persisted)refreshFromServer(true);});
+  setInterval(()=>{if(document.visibilityState==='visible')refreshFromServer(false);},60000);
+
   // ---------- SELF-HEALING SEED (idempotent; only fills EMPTY stores, never clobbers edits) ----------
   // Runs every load. Because it only writes to stores that are currently empty, it's safe to
   // repeat — and it self-heals the case where a flag was set but a data write had failed.
@@ -502,7 +641,10 @@ async function resolveOrg(){
   }
 
   function toast(m){S.toast=m;render();setTimeout(()=>{S.toast=null;render();},2200);}
-  function logChange(slug,text,type){const key='changes:'+today();sGet(key).then(list=>{list=list||[];list.push({rm:rmName(slug),text,type,at:nowISO()});sSet(key,list);});}
+  // One log row per RM per day ('changes:<date>:<slug>') — with the old shared daily key,
+  // two RMs saving around the same time overwrote each other's entries and moves went
+  // missing from the morning report. Reads aggregate all rows for the date.
+  function logChange(slug,text,type){const key='changes:'+today()+':'+slug;sGet(key).then(list=>{list=list||[];list.push({rm:rmName(slug),text,type,at:nowISO()});sSet(key,list);});}
 
   // ---------- GENERIC CONFIRM MODAL (replaces window.confirm — unreliable in sandboxed frames) ----------
   function askConfirm(title,body,confirmLabel,onYes){
@@ -616,6 +758,9 @@ async function resolveOrg(){
   }
 
   // ---------- INIT ----------
+  // Support/debug handle (console + automated tests): inspect state, force a sync.
+  window.CTS_DEBUG={S,sGet,sSet,loadRM,saveRM,loadPortfolio,savePortfolio,loadLost,saveLost,refreshFromServer,logChange,uid,render};
+
   (async function(){await loadConfig();await seedIfEmpty();await loadAll();await loadAllPortfolio();await loadHouse();await loadAllLost();S.pendingImport=captureImport();S.screen='gate';render();})();
 
   // ================= RENDER ROUTER =================
