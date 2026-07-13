@@ -759,7 +759,7 @@ async function resolveOrg(){
 
   // ---------- INIT ----------
   // Support/debug handle (console + automated tests): inspect state, force a sync.
-  window.CTS_DEBUG={S,sGet,sSet,loadRM,saveRM,loadPortfolio,savePortfolio,loadLost,saveLost,refreshFromServer,logChange,uid,render};
+  window.CTS_DEBUG={S,sGet,sSet,loadRM,saveRM,loadPortfolio,savePortfolio,loadLost,saveLost,refreshFromServer,logChange,uid,render,recoveryAnalyse,_recApply};
 
   (async function(){await loadConfig();await seedIfEmpty();await loadAll();await loadAllPortfolio();await loadHouse();await loadAllLost();S.pendingImport=captureImport();S.screen='gate';render();})();
 
@@ -1377,6 +1377,7 @@ async function resolveOrg(){
           <button class="tab ${S.tab==='problems'?'active':''}" id="t-pr">Problem Areas</button>
           <button class="tab ${S.tab==='lost'?'active':''}" id="t-ls">Not Successful</button>
           <button class="tab ${S.tab==='changes'?'active':''}" id="t-ch">Yesterday</button>
+          <button class="tab ${S.tab==='recovery'?'active':''}" id="t-rc">Recovery</button>
           <button class="tab ${S.tab==='settings'?'active':''}" id="t-se">Access</button>
         </div>
       </div><div id="body"></div>${S.modal?renderModal():''}${S.confirmModal?renderConfirmModal():''}${S.toast?`<div class="toast">${esc(S.toast)}</div>`:''}`;
@@ -1388,6 +1389,7 @@ async function resolveOrg(){
     document.getElementById('t-pr').onclick=()=>{S.tab='problems';render();};
     document.getElementById('t-ls').onclick=()=>{S.tab='lost';render();};
     document.getElementById('t-ch').onclick=()=>{S.tab='changes';render();};
+    document.getElementById('t-rc').onclick=()=>{S.tab='recovery';S._recovery=null;render();};
     document.getElementById('t-se').onclick=()=>{S.tab='settings';render();};
     const body=document.getElementById('body');
     if(S.tab==='overview'){body.innerHTML=cmdOverview();wireCmdOverview();}
@@ -1397,9 +1399,138 @@ async function resolveOrg(){
     else if(S.tab==='problems')body.innerHTML=cmdProblems();
     else if(S.tab==='lost'){body.innerHTML=lostView();wireLostView();}
     else if(S.tab==='changes'){body.innerHTML=cmdChanges();wireCmdChanges();}
+    else if(S.tab==='recovery'){body.innerHTML=cmdRecovery();wireCmdRecovery();}
     else{body.innerHTML=cmdSettings();wireCmdSettings();}
     if(S.modal)wireModal();
     if(S.confirmModal)wireConfirmModal();
+  }
+
+  // ================= RECOVERY (rebuild lost work from the surviving change journal) =================
+  // The old save layer could revert data entered from other devices, but every action was
+  // journalled to separate change-log rows that survived intact. This tab replays the whole
+  // journal against the current data, lists every change the data no longer reflects, and
+  // lets management re-apply the ticked ones in bulk — so nobody re-captures work.
+  const _H2K={'Stable':'green','Vulnerable':'amber','At Risk':'red'};
+  const _slugByRmName={};RMS.forEach(r=>{_slugByRmName[r.name]=r.slug;});_slugByRmName['Cartrack (House)']='__house';
+  function _recParse(e){
+    const t=e.text||'';let m;
+    if(e.type==='new'&&(m=t.match(/^New prospect added: (.+) \(R(.*)\)$/)))return{kind:'new',name:m[1],premium:+(m[2].replace(/[^\d]/g,''))||0};
+    if(e.type==='stage'&&(m=t.match(/^(.+): moved \d+→(\d+)/)))return{kind:'stage',name:m[1],stage:+m[2]};
+    if(e.type==='health'&&(m=t.match(/^(.+): health .+→(Stable|Vulnerable|At Risk)$/)))return{kind:'health',name:m[1],health:_H2K[m[2]]};
+    if(e.type==='arch'&&(m=t.match(/^(Archived|Restored): (.+)$/)))return{kind:'arch',name:m[2],archived:m[1]==='Archived'};
+    if(e.type==='lost'&&(m=t.match(/^Not successful: (.+?) — (.+)$/)))return{kind:'lost',name:m[1],reason:m[2]};
+    if(e.type==='restore'&&(m=t.match(/^Restored to pipeline: (.+)$/)))return{kind:'restore',name:m[1]};
+    if(e.type==='update'&&(m=t.match(/^Updated (.+)$/)))return{kind:'update',name:m[1]};
+    if(e.type==='won'&&(m=t.match(/^(.+) added to book from a won comparison$/)))return{kind:'won',name:m[1]};
+    return null;
+  }
+  const _findByName=(list,name)=>(list||[]).find(x=>((x.prospectName||x.client||'').trim().toLowerCase())===name.toLowerCase());
+  async function recoveryAnalyse(){
+    const log=(await sGet('changes:'))||[];   // every journal entry, all dates, all RMs
+    const want={};
+    for(const e of log){
+      const p=_recParse(e);if(!p)continue;
+      const slug=_slugByRmName[e.rm];if(!slug)continue;
+      const k=slug+'|'+p.name.trim().toLowerCase();
+      const w=want[k]||(want[k]={slug,name:p.name.trim()});
+      if(p.kind==='new'){w.added=true;w.premium=p.premium;w.inLost=false;w.addedAt=e.at;}
+      if(p.kind==='stage'){w.stage=p.stage;w.stageAt=(e.at||'').slice(0,10);}
+      if(p.kind==='health')w.health=p.health;
+      if(p.kind==='arch')w.archived=p.archived;
+      if(p.kind==='lost'){w.inLost=true;w.lostReason=p.reason;w.lostAt=e.at;}
+      if(p.kind==='restore'){w.inLost=false;w.restored=true;}
+      if(p.kind==='update')w.editedAt=e.at;
+      if(p.kind==='won')w.won=true;
+      w.at=e.at||w.at;
+    }
+    const props=[],info=[];
+    for(const k in want){
+      const w=want[k];
+      const label=`${rmName(w.slug)} · ${w.name}`;
+      const deal=_findByName(S.deals[w.slug],w.name);
+      const lostRec=w.slug==='__house'?null:_findByName(S.lost[w.slug],w.name);
+      if(w.inLost){
+        if(deal)props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Move back to Not Successful — ${w.lostReason}`,act:'relose',w});
+        else if(!lostRec&&w.slug!=='__house')props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Restore missing Not Successful record — ${w.lostReason}`,act:'mklost',w});
+        continue;
+      }
+      if(!deal){
+        if(lostRec&&!w.restored){info.push(`${label} — sits in Not Successful but the journal never marked it lost; check with ${rmName(w.slug)}`);continue;}
+        if(w.added||w.stage!=null||w.restored){
+          props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Re-add deal — ${zar(w.premium||0)}, stage ${w.stage||1} (${STAGES[(w.stage||1)-1]})${w.archived?', archived':''}`,act:'mkdeal',w});
+        }
+        continue;
+      }
+      if(w.stage!=null&&+deal.stage!==w.stage)props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Stage ${deal.stage} → ${w.stage} (${STAGES[w.stage-1]})`,act:'stage',w});
+      if(w.health&&deal.health!==w.health)props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Health ${HEALTH[deal.health]||deal.health} → ${HEALTH[w.health]}`,act:'health',w});
+      if(w.archived!=null&&!!deal.archived!==w.archived)props.push({slug:w.slug,name:w.name,label,sel:true,desc:w.archived?'Archive (was archived, came back)':'Un-archive (was restored, still archived)',act:'arch',w});
+      if(w.editedAt&&deal.updatedAt&&_ts(deal.updatedAt)<_ts(w.editedAt))info.push(`${label} — details were edited on ${w.editedAt.slice(0,10)} but the deal looks older; ask ${rmName(w.slug)} to glance over the fields`);
+      if(w.won&&w.slug!=='__house'&&!_findByName(S.portfolio[w.slug],w.name))info.push(`${label} — was added to the book from a won comparison but is missing from Active Clients; re-import or add manually`);
+    }
+    props.sort((a,b)=>a.label.localeCompare(b.label));
+    return {props,info,logCount:log.length};
+  }
+  function _recApply(p){
+    const w=p.w,now=nowISO();
+    const list=S.deals[p.slug]||(S.deals[p.slug]=[]);
+    const deal=_findByName(list,p.name);
+    if(p.act==='relose'||p.act==='mklost'){
+      const src=deal||{};
+      S.lost[p.slug]=S.lost[p.slug]||[];
+      S.lost[p.slug].push({id:uid(),prospectName:p.name,industry:src.industry||'',portfolioSize:src.portfolioSize||'',
+        premium:+(src.premium!=null?src.premium:w.premium)||0,leadSource:src.leadSource||'',stageAtLoss:src.stage||w.stage||1,
+        reason:w.lostReason||'Other',note:'Restored by sync recovery',at:w.lostAt||now});
+      if(deal)S.deals[p.slug]=list.filter(x=>x!==deal);
+      return {deals:p.act==='relose',lost:true};
+    }
+    if(p.act==='mkdeal'){
+      list.push({id:uid(),prospectName:p.name,industry:'',portfolioSize:'',stage:w.stage||1,nextStep:'',roadblocks:'',
+        premium:w.premium||0,leadSource:'',stageEntryDate:w.stageAt||(w.addedAt||now).slice(0,10),lastActivity:(w.at||now).slice(0,10),
+        health:w.health||'amber',archived:w.archived===true,createdAt:w.addedAt||now,updatedAt:now});
+      return {deals:true};
+    }
+    if(!deal)return {};
+    if(p.act==='stage'){deal.stage=w.stage;if(w.stageAt)deal.stageEntryDate=w.stageAt;}
+    if(p.act==='health')deal.health=w.health;
+    if(p.act==='arch')deal.archived=w.archived;
+    deal.updatedAt=now;
+    return {deals:true};
+  }
+  function cmdRecovery(){
+    const r=S._recovery;
+    if(!r)return `<div class="wrap wrap-wide"><div class="note">Scanning the change journal and comparing it with the live data…</div></div>`;
+    const groups={};r.props.forEach((p,i)=>{p._i=i;(groups[rmName(p.slug)]=groups[rmName(p.slug)]||[]).push(p);});
+    return `<div class="wrap wrap-wide">
+      <div class="note">Every action the team logs is journalled separately from the deal data — and the journal survived the sync problem. Below is every journalled change the live data no longer shows. Tick what should be restored (everything is pre-ticked), untick anything you know was undone on purpose, then apply. Nothing is written until you press the button.</div>
+      <div class="sec-title">\u{1F527} Changes to restore (${r.props.length})</div>
+      <div class="card">${r.props.length===0?'<div class="empty" style="padding:16px;">Nothing to restore — the live data already reflects every journalled change. No double work needed.</div>':Object.keys(groups).map(g=>`
+        <div style="padding:10px 14px 2px;font-family:'Saira';font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">${esc(g)}</div>
+        ${groups[g].map(p=>`<label class="change-item" style="cursor:pointer;align-items:center;">
+          <input type="checkbox" data-rec="${p._i}" ${p.sel?'checked':''} style="width:17px;height:17px;accent-color:var(--accent);flex:none;">
+          <div style="flex:1;"><div class="change-txt"><b>${esc(p.name)}</b></div>
+          <div class="change-time">${esc(p.desc)}</div></div></label>`).join('')}`).join('')}</div>
+      ${r.props.length?`<button class="btn btn-primary" id="rec-apply" style="margin:14px 0 6px;width:100%;">Restore ${r.props.filter(p=>p.sel).length} selected change(s)</button>`:''}
+      ${r.info.length?`<div class="sec-title" style="margin-top:18px;">\u{1F440} Needs a human eye (${r.info.length})</div>
+      <div class="card">${r.info.map(t=>`<div class="change-item"><div style="flex:1;" class="change-txt">${esc(t)}</div></div>`).join('')}</div>`:''}
+      <div class="change-time" style="margin-top:10px;">Journal entries scanned: ${r.logCount}</div>
+    </div>`;
+  }
+  function wireCmdRecovery(){
+    if(!S._recovery){recoveryAnalyse().then(r=>{S._recovery=r;render();}).catch(e=>{S._recovery={props:[],info:['Could not read the journal: '+e.message],logCount:0};render();});return;}
+    document.querySelectorAll('[data-rec]').forEach(cb=>cb.onchange=()=>{S._recovery.props[+cb.dataset.rec].sel=cb.checked;render();});
+    const btn=document.getElementById('rec-apply');
+    if(btn)btn.onclick=async()=>{
+      const sel=S._recovery.props.filter(p=>p.sel);
+      if(!sel.length)return;
+      btn.disabled=true;btn.textContent='Restoring…';
+      const touched={deals:new Set(),lost:new Set()};
+      sel.forEach(p=>{const t=_recApply(p);if(t.deals)touched.deals.add(p.slug);if(t.lost)touched.lost.add(p.slug);});
+      for(const slug of touched.deals)await saveRM(slug);
+      for(const slug of touched.lost)await saveLost(slug);
+      const bySlug={};sel.forEach(p=>{bySlug[p.slug]=(bySlug[p.slug]||0)+1;});
+      Object.keys(bySlug).forEach(slug=>logChange(slug,`Sync recovery restored ${bySlug[slug]} change(s)`,'update'));
+      S._recovery=null;render();toast(`${sel.length} change(s) restored`);
+    };
   }
 
   function allActive(){const o=[];RMS.forEach(r=>(S.deals[r.slug]||[]).filter(d=>!d.archived).forEach(d=>o.push(Object.assign({rmSlug:r.slug,rmName:r.name},d))));
