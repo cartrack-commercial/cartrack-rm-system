@@ -2022,7 +2022,7 @@ async function resolveOrg(){
         <div class="card" data-sxn>${ds.map(d=>`<div class="change-item" data-cedit="${d.rmSlug}:${d.id}" style="cursor:pointer;" title="Tap to edit / correct this deal">
           <div class="change-ico" style="background:${d.health==='red'?'var(--red-soft)':d.health==='amber'?'var(--amber-soft)':'var(--accent-soft)'};">\u{1F3E2}</div>
           <div style="flex:1;"><div class="change-txt"><b>${esc(d.prospectName)}</b> — ${esc(d.rmName)}</div>
-            <div class="change-time">${d.nextStep?esc(d.nextStep):'No next step set'}${d.roadblocks?` · \u26A0 ${esc(d.roadblocks)}`:''}</div></div>
+            <div class="change-time" style="color:var(--accent-ink);">${d.nextStep?esc(d.nextStep):'No next step set'}${d.roadblocks?` · \u26A0 ${esc(d.roadblocks)}`:''}</div></div>
           <div style="text-align:right;align-self:center;"><div class="prem mono">${zar(d.premium)}</div>
             <div class="hb hb-${d.health}" style="margin-top:4px;"><span class="dot"></span>${HEALTH[d.health]}</div></div></div>`).join('')}</div>`;
       }).join('')}
