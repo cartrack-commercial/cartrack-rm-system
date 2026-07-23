@@ -226,6 +226,45 @@
   .dr .attn .a{font-size:12px;line-height:1.5;padding:5px 0;border-bottom:1px solid #FAD9C2;}
   .dr .attn .a:last-child{border-bottom:none;}
   .dr .foot{margin-top:20px;padding:10px 20px;border-top:1px solid #E7EAEF;font-size:8.5px;color:#A8AFBC;text-transform:uppercase;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace;display:flex;justify-content:space-between;}
+
+  /* ---------- My Day / personalisation ---------- */
+  .myday{margin-bottom:12px;border-top:3px solid var(--me,var(--accent));}
+  .md-greet{font-size:18.5px;font-weight:800;font-family:'Saira',sans-serif;}
+  .md-greet b{color:var(--me,var(--accent));}
+  .md-date{font-size:10.5px;color:var(--faint);margin:2px 0 12px;text-transform:uppercase;letter-spacing:.09em;}
+  .md-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .md-stat{background:var(--line-soft,#E8EBEF);border-radius:10px;padding:9px 10px;min-width:0;}
+  .md-k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);}
+  .md-v{font-size:16px;font-weight:800;margin-top:2px;white-space:nowrap;}
+  .md-s{font-size:10.5px;color:var(--faint);}
+  .md-race{margin-top:11px;}
+  .md-race-lab{font-size:11.5px;color:var(--ink);margin-bottom:4px;font-weight:600;}
+  .md-bar-bg{height:7px;border-radius:99px;background:var(--line-soft,#E8EBEF);overflow:hidden;}
+  .md-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--me,var(--accent)),#FF8A47);transition:width .5s ease;}
+  .md-titles{margin-top:11px;display:flex;gap:6px;flex-wrap:wrap;}
+  .md-title{font-size:11px;font-weight:700;background:#FEF4EC;color:#B4500F;border:1px solid #F4A46F;border-radius:999px;padding:3px 10px;}
+  .md-ren-h{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin:13px 0 4px;}
+  .md-ren{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;padding:6px 2px;border-top:1px solid var(--line-soft,#E8EBEF);cursor:pointer;}
+  .md-ren b{color:#B4500F;white-space:nowrap;}
+  .md-recap{margin-top:12px;font-size:12.5px;background:#EAF2FC;border:1px solid #Bed7f3;border-radius:10px;padding:9px 11px;line-height:1.55;}
+  .lb-titles{display:grid;gap:8px;margin:0 0 12px;}
+  .lb-title{background:var(--surface);border:1px solid var(--line-soft,#E8EBEF);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;}
+  .lb-tt{font-weight:700;}
+  .lb-ts{color:var(--faint);font-size:11.5px;}
+  /* deal-signed celebration */
+  .celebrate{position:fixed;inset:0;background:rgba(9,10,13,.94);z-index:400;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .celebrate i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;opacity:.95;animation:cfall linear forwards;}
+  @keyframes cfall{to{transform:translateY(112vh) rotate(720deg);}}
+  .cel-in{position:relative;text-align:center;color:#fff;padding:30px;max-width:340px;}
+  .cel-bell{font-size:52px;animation:cring .9s ease 2;}
+  @keyframes cring{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}60%{transform:rotate(14deg)}}
+  .cel-t{font-weight:900;font-size:14px;letter-spacing:.3em;color:#FF8A47;margin-top:8px;font-family:'Saira',sans-serif;}
+  .cel-n{font-weight:800;font-size:23px;margin-top:8px;line-height:1.25;}
+  .cel-p{font-weight:900;font-size:38px;margin-top:6px;color:#FF8A47;font-family:'Saira',sans-serif;}
+  .cel-p span{font-size:14px;color:#A8AFBC;font-weight:600;}
+  .cel-rec{margin-top:10px;font-weight:700;background:rgba(244,119,53,.16);border:1px solid #F47735;border-radius:10px;padding:7px 12px;font-size:13px;}
+  .cel-wa{display:inline-block;margin-top:16px;background:#25D366;color:#fff;border-radius:10px;padding:11px 18px;font-weight:800;text-decoration:none;font-size:14px;}
+  .cel-x{display:block;margin:12px auto 0;color:#A8AFBC;background:none;border:none;font-size:13px;cursor:pointer;}
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -867,7 +906,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.07.19d';
+  const APP_VERSION='v2026.07.23';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1049,7 +1088,7 @@ async function resolveOrg(){
     root.innerHTML=`
       <div class="hdr hdr-rm">
         <div class="hdr-top">
-          <div class="hdr-id"><div class="hdr-mark">${esc(rmName(slug)[0])}</div>
+          <div class="hdr-id"><div class="hdr-mark" style="background:${rmHue(slug)}">${esc(_firstName(slug)[0])}</div>
             <div><div class="hdr-title">${esc(rmName(slug))}</div><div class="hdr-sub">Cartrack Commercial RM</div></div></div>
           <a class="hdr-home" href="https://cartrack-commercial.github.io/" title="Back to launcher">&#8592; Home</a><button class="logout" id="lo">Sign out</button>
         </div>
@@ -1069,7 +1108,7 @@ async function resolveOrg(){
     document.getElementById('t-comm').onclick=()=>{S.tab='comm';render();};
     document.getElementById('t-board').onclick=()=>{S.tab='board';render();};
     const body=document.getElementById('body');
-    if(S.tab==='mine'){body.innerHTML=rmPipeline(slug);wireRMPipeline();}
+    if(S.tab==='mine'){body.innerHTML=rmPipeline(slug);wireRMPipeline();wireMyDay(slug);}
     else if(S.tab==='clients'){body.innerHTML=rmClients(slug);wireRmClients(slug);}
     else if(S.tab==='comm'){body.innerHTML='<div class="wrap"><div class="empty" style="padding:40px;">Loading your commission…</div></div>';wireRMCommission(slug);}
     else{body.innerHTML=leaderboard(slug);wireLeaderboard();}
@@ -1224,12 +1263,118 @@ async function resolveOrg(){
     };
   }
 
+  // ================= MY DAY — personal landing (read-only, all client-side) =================
+  // The RM's own numbers before the team's: greeting, month race vs their own
+  // best, honours, renewal countdowns and a Monday recap. Nothing here writes
+  // to Supabase — celebration/recap de-dupes live in this device's localStorage.
+  const _monthKey=d=>String(d||'').slice(0,7);
+  const _firstName=slug=>rmName(slug).split('/')[0].trim();
+  // The team's own register — informal Afrikaans, English mixed in.
+  function _greet(){const h=new Date().getHours();return h<12?'Goeie m\u00f4re':h<17?'Goeie middag':'Goeie naand';}
+  // Per-RM avatar hue: identity without repainting the DS.
+  const RM_HUES={hein:'#4E8DE8',jean:'#E2631C',elizabeth:'#9C6ADE',bronwyn:'#E0567E',bernard:'#2FA47A',cules:'#C89A3C',phillip:'#4FB3C9'};
+  const rmHue=slug=>RM_HUES[slug]||'#F47735';
+  function _wonDeals(slug){return (S.deals[slug]||[]).filter(d=>d.stage===7);}
+  function _wonInMonth(slug,ym){return _wonDeals(slug).filter(d=>_monthKey(d.updatedAt)===ym);}
+  function _bestMonth(slug,exceptYm){const by={};_wonDeals(slug).forEach(d=>{const k=_monthKey(d.updatedAt);if(!k||k===exceptYm)return;by[k]=(by[k]||0)+(+d.premium||0);});return Math.max(0,...Object.values(by));}
+  function _renewalsSoon(slug,days){
+    return (S.portfolio[slug]||[]).filter(p=>!p.archived&&p.renewal)
+      .map(p=>({p,days:Math.ceil((new Date(String(p.renewal).slice(0,10)+'T00:00:00').getTime()-new Date().setHours(0,0,0,0))/864e5)}))
+      .filter(x=>!isNaN(x.days)&&x.days>=0&&x.days<=days).sort((a,b)=>a.days-b.days);
+  }
+  // Rotating monthly honours — more ways to win than rank #1.
+  function _titles(){
+    const ym=_monthKey(nowISO());const out=[];
+    let big=null;RMS.forEach(r=>_wonInMonth(r.slug,ym).forEach(d=>{if(!big||(+d.premium||0)>(+big.d.premium||0))big={slug:r.slug,d};}));
+    if(big&&+big.d.premium>0)out.push({t:'\u{1F3C6} Biggest deal of the month',who:big.slug,sub:big.d.prospectName+' \u00b7 '+zar(big.d.premium)+'/m'});
+    let won=null;RMS.forEach(r=>{const n=_wonInMonth(r.slug,ym).length;if(n&&(!won||n>won.n))won={slug:r.slug,n};});
+    if(won)out.push({t:'\u{1F514} Most wins this month',who:won.slug,sub:won.n+' deal'+(won.n===1?'':'s')+' signed'});
+    let act=null;const wk=Date.now()-7*864e5;
+    RMS.forEach(r=>{const n=(S.deals[r.slug]||[]).filter(d=>!d.archived&&d.lastActivity&&new Date(d.lastActivity.slice(0,10)+'T00:00:00').getTime()>=wk).length;if(n&&(!act||n>act.n))act={slug:r.slug,n};});
+    if(act)out.push({t:'\u26A1 Most active this week',who:act.slug,sub:act.n+' deal'+(act.n===1?'':'s')+' updated'});
+    return out;
+  }
+  function _isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dn=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-dn+3);const f=new Date(Date.UTC(t.getUTCFullYear(),0,4));return t.getUTCFullYear()+'-W'+String(1+Math.round(((t-f)/864e5-3+((f.getUTCDay()+6)%7))/7)).padStart(2,'0');}
+  function _recapCard(slug){
+    try{
+      const day=new Date().getDay();if(day!==1&&day!==2)return '';
+      const wk=_isoWeek(new Date());
+      const seen=JSON.parse(localStorage.getItem('ct_rm_recap')||'{}');
+      if(seen[slug]===wk)return '';
+      const now=new Date().setHours(0,0,0,0),lo=now-7*864e5;
+      const inWin=s=>{if(!s)return false;const t=new Date(String(s).slice(0,10)+'T00:00:00').getTime();return t>=lo&&t<now;};
+      const all=S.deals[slug]||[];
+      const moved=all.filter(d=>inWin(d.lastActivity)).length;
+      const won=all.filter(d=>d.stage===7&&inWin(d.updatedAt));
+      const prem=won.reduce((s,d)=>s+(+d.premium||0),0);
+      if(!moved&&!won.length)return '';
+      return '<div class="md-recap"><b>Your week in review:</b> '+moved+' deal'+(moved===1?'':'s')+' worked'+(won.length?' \u00b7 '+won.length+' signed ('+zar(prem)+'/m)':'')+'. <button class="link-btn" id="md-recap-x">Got it</button></div>';
+    }catch(e){return '';}
+  }
+  function myDayCard(slug){
+    try{
+      const ym=_monthKey(nowISO());
+      const active=(S.deals[slug]||[]).filter(d=>!d.archived);
+      const pipeline=active.reduce((s,d)=>s+(+d.premium||0),0);
+      const wonM=_wonInMonth(slug,ym);
+      const wonPrem=wonM.reduce((s,d)=>s+(+d.premium||0),0);
+      const best=_bestMonth(slug,ym);
+      const book=S.portfolio[slug]||[];
+      const bookPrem=book.reduce((s,p)=>s+(+p.premium||0),0);
+      const ren=_renewalsSoon(slug,45).slice(0,3);
+      const mine=_titles().filter(t=>t.who===slug);
+      const pct=best>0?Math.min(100,Math.round(wonPrem/best*100)):(wonPrem>0?100:0);
+      return '<div class="card myday" style="--me:'+rmHue(slug)+'">'
+        +'<div class="md-greet">'+_greet()+', <b>'+esc(_firstName(slug))+'</b> \u{1F44B}</div>'
+        +'<div class="md-date">'+new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'})+'</div>'
+        +'<div class="md-stats">'
+        +'<div class="md-stat"><div class="md-k">My pipeline</div><div class="md-v">'+zar(pipeline)+'</div><div class="md-s">'+active.length+' active deal'+(active.length===1?'':'s')+'</div></div>'
+        +'<div class="md-stat"><div class="md-k">Signed this month</div><div class="md-v">'+zar(wonPrem)+'</div><div class="md-s">'+wonM.length+' win'+(wonM.length===1?'':'s')+'</div></div>'
+        +'<div class="md-stat"><div class="md-k">My book</div><div class="md-v">'+zar(bookPrem)+'</div><div class="md-s">'+book.length+' client'+(book.length===1?'':'s')+'</div></div>'
+        +'</div>'
+        +((best>0||wonPrem>0)?'<div class="md-race"><div class="md-race-lab">'+(wonPrem>best&&best>0?'\u{1F3C1} Your best month yet \u2014 new personal record':(best>0?'vs your best month ('+zar(best)+')':'First signings \u2014 setting your benchmark'))+'</div><div class="md-bar-bg"><div class="md-bar" style="width:'+pct+'%"></div></div></div>':'')
+        +(mine.length?'<div class="md-titles">'+mine.map(t=>'<span class="md-title">'+t.t+'</span>').join('')+'</div>':'')
+        +(ren.length?'<div class="md-ren-h">Renewals on your book</div>'+ren.map(x=>'<div class="md-ren" data-ren="1"><span>'+(x.days<=14?'\u26A0\uFE0F':'\u{1F4C5}')+' '+esc(x.p.client)+'</span><b>'+(x.days===0?'today':x.days+' day'+(x.days===1?'':'s'))+'</b></div>').join(''):'')
+        +_recapCard(slug)
+        +'</div>';
+    }catch(e){return '';}
+  }
+  function wireMyDay(slug){
+    const x=document.getElementById('md-recap-x');
+    if(x)x.onclick=()=>{try{const seen=JSON.parse(localStorage.getItem('ct_rm_recap')||'{}');seen[slug]=_isoWeek(new Date());localStorage.setItem('ct_rm_recap',JSON.stringify(seen));}catch(e){}render();};
+    document.querySelectorAll('[data-ren]').forEach(el=>el.onclick=()=>{S.tab='clients';render();});
+  }
+  // Full-screen moment when a deal flips to Won — the bell. De-duped per deal
+  // id on this device; appended to <body> so it survives re-renders.
+  function _celebrate(slug,d){
+    try{const seen=JSON.parse(localStorage.getItem('ct_rm_celebrated')||'{}');if(seen[d.id])return;seen[d.id]=1;localStorage.setItem('ct_rm_celebrated',JSON.stringify(seen));}catch(e){}
+    const ym=_monthKey(nowISO());
+    const wonPrem=_wonInMonth(slug,ym).reduce((s,x)=>s+(+x.premium||0),0);
+    const best=_bestMonth(slug,ym);
+    const record=best>0&&wonPrem>best;
+    const wa='https://wa.me/?text='+encodeURIComponent('\u{1F514} Deal signed \u2014 '+d.prospectName+' \u00b7 '+zar(d.premium)+'/m \u2014 '+_firstName(slug)+' (Cartrack Commercial)');
+    let conf='';for(let i=0;i<70;i++){conf+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;animation-delay:'+(Math.random()*0.9).toFixed(2)+'s;animation-duration:'+(2+Math.random()*1.6).toFixed(2)+'s;background:'+['#F47735','#FF8A47','#FFD166','#2FA47A','#4E8DE8','#fff'][i%6]+'"></i>';}
+    const el=document.createElement('div');el.className='celebrate';
+    el.innerHTML=conf+'<div class="cel-in"><div class="cel-bell">\u{1F514}</div><div class="cel-t">DEAL SIGNED</div>'
+      +'<div class="cel-n">'+esc(d.prospectName)+'</div>'
+      +'<div class="cel-p">'+zar(d.premium)+'<span>/month</span></div>'
+      +(record?'<div class="cel-rec">\u{1F3C1} Your best month yet \u2014 '+zar(wonPrem)+' signed</div>':'')
+      +'<a class="cel-wa" href="'+wa+'" target="_blank" rel="noopener">Share to team WhatsApp</a>'
+      +'<button class="cel-x" id="cel-x">Close</button></div>';
+    document.body.appendChild(el);
+    const close=()=>{try{el.remove();}catch(e){}};
+    el.querySelector('#cel-x').onclick=close;
+    el.addEventListener('click',e=>{if(e.target===el)close();});
+    setTimeout(close,15000);
+  }
+
   function rmPipeline(slug){
     const all=S.deals[slug]||[];
     const active=all.filter(d=>!d.archived), arch=all.filter(d=>d.archived);
     const list=S.showArch?arch:active;
     const stale=active.filter(d=>daysSince(d.lastActivity||d.stageEntryDate)>=STALE_DAYS&&d.stage<7);
     return `<div class="wrap">
+      ${S.showArch?'':myDayCard(slug)}
       ${(!S.showArch&&stale.length)?`<div class="card" style="border:1.5px solid var(--amber);background:var(--amber-soft);margin-bottom:12px;">
         <div style="font-weight:700;font-size:13.5px;">⏱ ${stale.length} deal${stale.length===1?'':'s'} gone quiet</div>
         <div style="font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.5;">These haven't moved in ${STALE_DAYS}+ days and are showing as stale to Bernard and Brendan. Tap each one and log where it's at — even "still waiting on docs" keeps it green. A quick daily update is all it takes.</div></div>`:''}
@@ -1397,8 +1542,10 @@ async function resolveOrg(){
     rows.sort((a,b)=>b[metric]-a[metric]);
     const max=Math.max(1,...rows.map(r=>r[metric]));
     const label={premium:'Pipeline value',deals:'Active deals',won:'Won / takeover'}[metric];
+    const honours=_titles();
     return `<div class="wrap">
       <div class="note">You're ranked against the team on activity and pipeline — commission and pay are always private and never shown here.</div>
+      ${honours.length?`<div class="sec-title">This month's honours</div><div class="lb-titles">${honours.map(t=>`<div class="lb-title"><span class="lb-tt">${t.t}</span><b>${esc(rmName(t.who))}</b><span class="lb-ts">${esc(t.sub)}</span></div>`).join('')}</div>`:''}
       <div class="metric-switch">
         <button class="ms-btn ${metric==='premium'?'active':''}" data-m="premium">Pipeline R</button>
         <button class="ms-btn ${metric==='deals'?'active':''}" data-m="deals">Deal count</button>
@@ -1492,6 +1639,7 @@ async function resolveOrg(){
         toast(`${d.prospectName} won — moved to Active Clients 🎉`);
       }
       S.modal=null;render();if(ok&&!becameWon)toast('Saved');
+      if(becameWon&&slug!=='__house')_celebrate(slug,d);
     };
   }
   // Add a won deal to the RM's Active Clients (book of business). De-dupes by client
