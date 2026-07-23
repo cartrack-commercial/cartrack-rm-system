@@ -911,7 +911,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.07.23b';
+  const APP_VERSION='v2026.07.23c';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1211,15 +1211,15 @@ async function resolveOrg(){
       <button class="btn btn-primary btn-full" id="cf-save" style="margin-top:14px;">Save client</button>
       ${S.modal._remove?`
       <div class="card" style="margin-top:10px;border:1.5px solid var(--red);background:var(--red-soft);">
-        <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Remove this client from the book?</div>
-        <div class="help" style="margin-bottom:8px;">The client disappears from Active Clients and stops counting toward the book and commission. Nothing is deleted — Brendan can see and restore removed clients from Command View.</div>
-        <div class="field"><label>Why is the client being removed?</label><select id="cf-rm-reason">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Delete this client completely?</div>
+        <div class="help" style="margin-bottom:8px;">This <b>permanently</b> deletes the client — its premium, renewal and activity history — for everyone, including Brendan's Command View. It <b>cannot be undone</b> and there is no restore. Only do this if the client should be gone entirely (for a wrong entry you can just edit the fields instead).</div>
+        <div class="field"><label>Why is the client being deleted?</label><select id="cf-rm-reason">
           <option>Policy cancelled</option><option>Moved to another broker</option>
           <option>Duplicate entry</option><option>Added in error</option><option>Other</option></select></div>
         <div style="display:flex;gap:8px;"><button class="btn" style="flex:1;" id="cf-rm-cancel">Keep client</button>
-        <button class="btn" style="flex:1;background:var(--red);border-color:var(--red);color:#fff;" id="cf-rm-go">Remove from book</button></div>
+        <button class="btn" style="flex:1;background:var(--red);border-color:var(--red);color:#fff;" id="cf-rm-go">Delete permanently</button></div>
       </div>`:
-      `<button class="btn btn-full" id="cf-remove" style="margin-top:8px;color:var(--red);">Remove from book…</button>`}
+      `<button class="btn btn-full" id="cf-remove" style="margin-top:8px;color:var(--red);">Delete from book…</button>`}
     </div></div>`;
   }
   function wireClientModal(){
@@ -1254,11 +1254,15 @@ async function resolveOrg(){
     const rmCancel=document.getElementById('cf-rm-cancel');if(rmCancel)rmCancel.onclick=()=>{S.modal._remove=false;render();};
     const rmGo=document.getElementById('cf-rm-go');if(rmGo)rmGo.onclick=async()=>{
       const rec=p();if(!rec)return;
-      const reason=document.getElementById('cf-rm-reason').value;
-      rec.archived=true;rec.archivedReason=reason;rec.archivedAt=nowISO();
+      const reason=document.getElementById('cf-rm-reason').value, name=rec.client;
+      // Complete delete — not a soft archive. The record is removed from the book
+      // and the merge-safe save erases it from the server, so it is gone for
+      // everyone including Command View; it can't be restored. A journal line is
+      // kept for the audit trail (who/why), not the client data itself.
+      S.portfolio[slug]=(S.portfolio[slug]||[]).filter(x=>x.id!==id);
       await savePortfolio(slug);
-      logChange(slug,`${rec.client} removed from Active Clients — ${reason}`,'update');
-      S.modal=null;render();toast('Client removed — Brendan can restore it if needed');
+      logChange(slug,`${name} deleted from the book — ${reason}`,'delclient');
+      S.modal=null;render();toast('Client deleted — removed for everyone');
     };
     // save quick fields
     document.getElementById('cf-save').onclick=async()=>{
@@ -1732,6 +1736,9 @@ async function resolveOrg(){
     if(e.type==='restore'&&(m=t.match(/^Restored to pipeline: (.+)$/)))return{kind:'restore',name:m[1]};
     if(e.type==='update'&&(m=t.match(/^Updated (.+)$/)))return{kind:'update',name:m[1]};
     if(e.type==='won'&&(m=t.match(/^(.+) added to book from a won comparison$/)))return{kind:'won',name:m[1]};
+    // A deliberate, complete client deletion (RM or Command View). Recorded so
+    // sync-recovery treats the client as intentionally gone, never nudges a re-add.
+    if(e.type==='delclient'&&(m=t.match(/^(.+?) (?:permanently )?deleted from the book\b/)))return{kind:'delclient',name:m[1]};
     return null;
   }
   const _findByName=(list,name)=>(list||[]).find(x=>((x.prospectName||x.client||'').trim().toLowerCase())===name.toLowerCase());
@@ -1751,6 +1758,7 @@ async function resolveOrg(){
       if(p.kind==='restore'){w.inLost=false;w.restored=true;}
       if(p.kind==='update')w.editedAt=e.at;
       if(p.kind==='won')w.won=true;
+      if(p.kind==='delclient')w.deleted=true;   // deliberately deleted — do not resurface
       w.at=e.at||w.at;
     }
     const props=[],info=[];
@@ -1775,7 +1783,7 @@ async function resolveOrg(){
       if(w.health&&deal.health!==w.health)props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Health ${HEALTH[deal.health]||deal.health} → ${HEALTH[w.health]}`,act:'health',w});
       if(w.archived!=null&&!!deal.archived!==w.archived)props.push({slug:w.slug,name:w.name,label,sel:true,desc:w.archived?'Archive (was archived, came back)':'Un-archive (was restored, still archived)',act:'arch',w});
       if(w.editedAt&&deal.updatedAt&&_ts(deal.updatedAt)<_ts(w.editedAt))info.push(`${label} — details were edited on ${w.editedAt.slice(0,10)} but the deal looks older; ask ${rmName(w.slug)} to glance over the fields`);
-      if(w.won&&w.slug!=='__house'&&!_findByName(S.portfolio[w.slug],w.name))info.push(`${label} — was added to the book from a won comparison but is missing from Active Clients; re-import or add manually`);
+      if(w.won&&!w.deleted&&w.slug!=='__house'&&!_findByName(S.portfolio[w.slug],w.name))info.push(`${label} — was added to the book from a won comparison but is missing from Active Clients; re-import or add manually`);
     }
     props.sort((a,b)=>a.label.localeCompare(b.label));
     return {props,info,logCount:log.length};
@@ -1981,7 +1989,7 @@ async function resolveOrg(){
       askConfirm('Delete permanently?',`<b>${esc(rec.client)}</b> (${esc(rmName(slug))}) will be erased completely — including its activity history. This cannot be undone. If in doubt, leave it under Removed.`,'Delete permanently',async()=>{
         S.portfolio[slug]=(S.portfolio[slug]||[]).filter(x=>x.id!==id);
         await savePortfolio(slug);
-        logChange(slug,`${rec.client} permanently deleted from the book by ${viewerName()}`,'update');
+        logChange(slug,`${rec.client} permanently deleted from the book by ${viewerName()}`,'delclient');
         render();toast('Client permanently deleted');
       });
     });

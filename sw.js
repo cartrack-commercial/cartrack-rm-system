@@ -3,7 +3,7 @@
    served online; the cached copy only kicks in offline. Only same-origin GETs
    are intercepted — Supabase API calls and Google Fonts pass straight through
    to the network untouched (data is never cached). */
-const CACHE = 'ct-rm-shell-v4';
+const CACHE = 'ct-rm-shell-v5';
 const SHELL = [
   './',
   './index.html',
