@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>H Annandale Attorneys — The Conveyancing Pipeline (Preview)</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  /* ---- Print geometry ---- */
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  .pg { width: 210mm; height: 296.5mm; overflow: hidden; position: relative; page-break-after: always; }
+  .pg:last-child { page-break-after: auto; }
+
+  /* ---- Brand ---- */
+  :root {
+    --navy: #17263A;        /* card navy */
+    --navy-2: #1E3049;      /* lifted navy panel */
+    --navy-3: #24384f;
+    --gold: #C49A5B;
+    --gold-soft: #D9BC8C;
+    --gold-faint: rgba(196,154,91,.32);
+    --paper: #FAF8F4;
+    --ink: #1B2B40;
+    --soft: #55647A;
+    --faint: #93A0B2;
+    --line: #E3DDD2;
+    /* app-mock palette (the actual app design language) */
+    --a-ink: #0B0C0F; --a-soft: #5E6675; --a-faint: #A8AFBC;
+    --a-accent: #B8873B; --a-accent-soft: #F8F0E1;
+    --a-green: #2C7A56; --a-green-soft: #DFEDE6;
+    --a-amber: #B07D18; --a-amber-soft: #F6E9CF;
+    --a-red: #AE372C; --a-red-soft: #F4DCD8;
+    --a-line: #E8EBEF;
+  }
+  body { font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; color: var(--ink); }
+  .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .caps { text-transform: uppercase; letter-spacing: .32em; }
+
+  /* ---- Cover ---- */
+  .cover { background: var(--navy); color: #fff; }
+  .cover .glow { position: absolute; inset: 0;
+    background: radial-gradient(120mm 70mm at 85% -5%, rgba(196,154,91,.20), transparent 65%),
+                radial-gradient(100mm 60mm at -10% 105%, rgba(196,154,91,.10), transparent 60%); }
+  .cover .rule-v { position: absolute; left: 24mm; top: 0; bottom: 0; width: .3mm; background: rgba(196,154,91,.18); }
+  .cover-in { position: absolute; inset: 0; padding: 30mm 26mm 22mm 36mm; display: flex; flex-direction: column; }
+  .cover .mark { width: 26mm; margin-bottom: 7mm; }
+  .firm { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 17.5pt; font-weight: 600; letter-spacing: .30em; color: #F2EDE4; }
+  .firm-sub { font-size: 7pt; letter-spacing: .42em; color: var(--gold-soft); margin-top: 2.2mm; text-transform: uppercase; }
+  .cover-rule { width: 34mm; height: .5mm; background: var(--gold); margin: 11mm 0 12mm; }
+  .cover h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 43pt; line-height: 1.04; color: #FDFCFA; }
+  .cover h1 em { font-style: italic; color: var(--gold-soft); }
+  .cover .tag { font-size: 12.5pt; color: #BCC7D6; margin-top: 6mm; font-weight: 400; line-height: 1.5; max-width: 120mm; }
+  .cover .for { margin-top: auto; }
+  .for-label { font-size: 7pt; letter-spacing: .34em; color: var(--gold-soft); text-transform: uppercase; margin-bottom: 4mm; }
+  .for-name { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 19pt; font-weight: 600; color: #F5F1E9; letter-spacing: .12em; text-transform: uppercase; }
+  .for-role { font-size: 8pt; color: #9FADC0; letter-spacing: .22em; text-transform: uppercase; margin: 1.4mm 0 4.5mm; }
+  .for-firm { font-size: 9.5pt; color: #BCC7D6; margin-top: 2.5mm; }
+  .cover-foot { display: flex; justify-content: space-between; align-items: flex-end; border-top: .3mm solid rgba(196,154,91,.25); padding-top: 4.5mm; margin-top: 12mm; }
+  .cover-foot .l { font-size: 8.5pt; color: #BCC7D6; }
+  .cover-foot .l b { color: #F2EDE4; font-weight: 600; }
+  .cover-foot .r { font-size: 7pt; color: #7E8DA3; letter-spacing: .12em; text-transform: uppercase; text-align: right; }
+
+  /* ---- Light pages ---- */
+  .light { background: var(--paper); }
+  .light-in { position: absolute; inset: 0; padding: 20mm 20mm 20mm; display: flex; flex-direction: column; }
+  .kicker { font-size: 7.5pt; letter-spacing: .34em; color: var(--gold); text-transform: uppercase; font-weight: 600; margin-bottom: 4mm; }
+  h2.title { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 24pt; line-height: 1.1; color: var(--ink); max-width: 165mm; }
+  .lead { font-size: 10.5pt; line-height: 1.58; color: var(--soft); margin-top: 4mm; max-width: 168mm; }
+  .lead b { color: var(--ink); font-weight: 600; }
+  .foot { position: absolute; left: 20mm; right: 20mm; bottom: 9mm; display: flex; justify-content: space-between; align-items: center; border-top: .3mm solid var(--line); padding-top: 3mm; }
+  .foot .f-l { font-size: 6.5pt; letter-spacing: .26em; color: var(--faint); text-transform: uppercase; }
+  .foot .f-r { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 10pt; color: var(--gold); }
+
+  /* idea panel */
+  .idea { background: var(--navy); border-radius: 3mm; color: #E8EDF4; padding: 6.2mm 8mm; margin-top: 6.5mm; display: flex; gap: 8mm; align-items: center; }
+  .idea .mark { width: 16mm; flex-shrink: 0; }
+  .idea p { font-size: 9.6pt; line-height: 1.58; }
+  .idea b { color: var(--gold-soft); font-weight: 600; }
+
+  /* stage rail */
+  .stages { margin-top: 6mm; column-count: 1; }
+  .stage-row { display: flex; gap: 5mm; align-items: flex-start; padding: 2.3mm 0; border-bottom: .26mm solid var(--line); }
+  .stage-row:last-child { border-bottom: none; }
+  .st-n { width: 7.2mm; height: 7.2mm; border-radius: 50%; border: .45mm solid var(--gold); color: var(--gold); font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 700; font-size: 11pt; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .4mm; }
+  .st-n.filled { background: var(--gold); color: #fff; }
+  .st-t { font-size: 10.2pt; font-weight: 700; color: var(--ink); }
+  .st-d { font-size: 8.8pt; color: var(--soft); line-height: 1.45; margin-top: .4mm; }
+  .engine-note { margin-top: 4.5mm; font-size: 8.5pt; color: var(--faint); font-style: italic; }
+
+  /* ---- Phone mocks ---- */
+  .mock-row { display: flex; gap: 6mm; margin-top: 7mm; justify-content: center; }
+  .phone { width: 52mm; background: #0B0C0F; border-radius: 5.2mm; padding: 1.7mm; box-shadow: 0 3mm 8mm rgba(23,38,58,.18); }
+  .phone-label { text-align: center; font-size: 7.5pt; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); font-weight: 600; margin: 3.4mm 0 1.4mm; }
+  .phone-note { font-size: 8pt; color: var(--soft); text-align: center; line-height: 1.5; margin: 0 auto; max-width: 48mm; }
+  .scr { background: #F4F5F7; border-radius: 3.8mm; overflow: hidden; height: 136mm; display: flex; flex-direction: column; font-family: 'IBM Plex Sans', sans-serif; }
+  .a-hdr { background: var(--a-ink); color: #fff; padding: 2.6mm 3mm 2.2mm; display: flex; align-items: center; gap: 1.8mm; }
+  .a-mark { width: 4.6mm; height: 4.6mm; border-radius: 1.2mm; background: var(--a-accent); color: #fff; font-family: 'Saira', sans-serif; font-weight: 800; font-size: 6.6pt; display: flex; align-items: center; justify-content: center; }
+  .a-hdr .t { font-family: 'Saira', sans-serif; font-size: 6.6pt; font-weight: 700; line-height: 1.15; }
+  .a-hdr .s { font-size: 4.9pt; color: rgba(255,255,255,.62); }
+  .a-body { padding: 2.4mm 2.6mm; flex: 1; overflow: hidden; }
+  .a-kpis { display: flex; gap: 1.6mm; margin-bottom: 2.2mm; }
+  .a-kpi { flex: 1; background: #fff; border: .2mm solid var(--a-line); border-radius: 1.8mm; padding: 1.6mm 1.2mm 1.4mm; text-align: center; }
+  .a-kpi .v { font-family: 'Saira', sans-serif; font-weight: 800; font-size: 8.6pt; color: var(--a-ink); white-space: nowrap; }
+  .a-kpi .v.money { font-size: 7pt; line-height: 1.5; }
+  .a-kpi .k { font-size: 4.6pt; color: var(--a-soft); margin-top: .3mm; }
+  .a-sec { font-family: 'Saira', sans-serif; font-size: 5.4pt; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--a-ink); margin: 2mm 0 1.2mm; }
+  .a-card { background: #fff; border: .2mm solid var(--a-line); border-radius: 2mm; padding: 2mm 2.2mm; margin-bottom: 1.7mm; }
+  .a-ref { font-size: 4.8pt; color: var(--a-faint); font-weight: 600; letter-spacing: .05em; }
+  .a-name { font-family: 'Saira', sans-serif; font-size: 6.9pt; font-weight: 700; color: var(--a-ink); margin-top: .3mm; }
+  .a-sub { font-size: 5.3pt; color: var(--a-soft); margin-top: .4mm; line-height: 1.45; }
+  .a-meta { display: flex; gap: 1.4mm; align-items: center; margin-top: 1.1mm; flex-wrap: wrap; }
+  .chip { font-size: 4.7pt; font-weight: 700; padding: .5mm 1.5mm; border-radius: 2mm; white-space: nowrap; }
+  .chip.gold { background: var(--a-accent-soft); color: #8A6224; }
+  .chip.green { background: var(--a-green-soft); color: var(--a-green); }
+  .chip.amber { background: var(--a-amber-soft); color: var(--a-amber); }
+  .chip.red { background: var(--a-red-soft); color: var(--a-red); }
+  .chip.navy { background: #ECEEF2; color: #1E222A; }
+  .a-price { font-family: 'Saira', sans-serif; font-weight: 700; font-size: 5.8pt; color: var(--a-ink); }
+  .a-next { font-size: 5pt; color: var(--a-soft); margin-top: 1mm; padding-top: 1mm; border-top: .2mm dashed var(--a-line); }
+  .a-next b { color: #8A6224; font-weight: 600; }
+  .a-next.late b { color: var(--a-red); }
+  .a-tabs { background: var(--a-ink); display: flex; padding: 1.2mm 1.6mm; gap: 1mm; }
+  .a-tab { flex: 1; text-align: center; font-size: 5pt; font-weight: 600; color: rgba(255,255,255,.66); padding: 1.1mm 0; border-radius: 1.4mm; }
+  .a-tab.on { background: #fff; color: var(--a-ink); }
+  /* file screen */
+  .a-stepper { display: flex; gap: .7mm; margin-bottom: 2mm; }
+  .a-step { flex: 1; height: 1.5mm; border-radius: 1mm; background: #E2E5EA; }
+  .a-step.done { background: var(--a-accent); }
+  .a-block { background: #FBF3F2; border: .25mm solid #EAC8C3; border-radius: 2mm; padding: 1.8mm 2.2mm; margin-bottom: 1.7mm; }
+  .a-block .bt { font-family: 'Saira', sans-serif; font-size: 5.4pt; font-weight: 800; color: var(--a-red); text-transform: uppercase; letter-spacing: .06em; }
+  .a-block .bi { font-size: 5.2pt; color: #6B4A45; line-height: 1.5; margin-top: .7mm; }
+  .a-check { display: flex; align-items: center; gap: 1.5mm; padding: 1mm 0; border-bottom: .2mm solid var(--a-line); }
+  .a-check:last-child { border-bottom: none; }
+  .a-box { width: 2.7mm; height: 2.7mm; border-radius: .8mm; border: .3mm solid #C9CFD8; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 4.6pt; }
+  .a-box.on { background: var(--a-green); border-color: var(--a-green); color: #fff; }
+  .a-box.pend { background: var(--a-amber-soft); border-color: var(--a-amber); color: var(--a-amber); }
+  .a-check .cl { font-size: 5.4pt; color: var(--a-ink); }
+  .a-check .cl.dim { color: var(--a-faint); }
+  .a-gold-card { background: var(--a-accent-soft); border: .25mm solid #E4CD9E; border-radius: 2mm; padding: 1.8mm 2.2mm; margin-top: 1.8mm; }
+  .a-gold-card .gt { font-family: 'Saira', sans-serif; font-size: 5.4pt; font-weight: 800; color: #8A6224; text-transform: uppercase; letter-spacing: .06em; }
+  .a-gold-card .gi { font-size: 5.4pt; color: #6B5222; margin-top: .6mm; line-height: 1.45; }
+  .a-day-greet { font-family: 'Saira', sans-serif; font-size: 8.4pt; font-weight: 800; color: var(--a-ink); }
+  .a-day-date { font-size: 5pt; color: var(--a-soft); margin: .5mm 0 2mm; }
+  .mock-caption { text-align: center; font-size: 8pt; color: var(--faint); font-style: italic; margin-top: 7mm; }
+
+  /* ---- Feature grid ---- */
+  .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-top: 8.5mm; }
+  .feat { background: #fff; border: .3mm solid var(--line); border-left: 1mm solid var(--gold); border-radius: 2.4mm; padding: 5.4mm 6mm 5.6mm; }
+  .feat h3 { font-size: 8pt; letter-spacing: .18em; text-transform: uppercase; color: var(--ink); font-weight: 700; }
+  .feat p { font-size: 9pt; line-height: 1.58; color: var(--soft); margin-top: 2.4mm; }
+  .feat p b { color: var(--ink); font-weight: 600; }
+  .feat .fine { font-size: 7.5pt; color: var(--faint); font-style: italic; margin-top: 2mm; }
+  .vitals { margin-top: auto; margin-bottom: 8mm; display: flex; gap: 9mm; border-top: .3mm solid var(--line); padding-top: 5.5mm; }
+  .vitals > div { flex: 1; }
+  .vitals h4 { font-size: 7pt; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+  .vitals p { font-size: 8.2pt; line-height: 1.55; color: var(--soft); margin-top: 1.8mm; }
+
+  /* ---- Closing page ---- */
+  .close { background: var(--navy); color: #E8EDF4; }
+  .close .glow { position: absolute; inset: 0;
+    background: radial-gradient(110mm 65mm at 90% 0%, rgba(196,154,91,.16), transparent 60%),
+                radial-gradient(90mm 60mm at 0% 100%, rgba(196,154,91,.10), transparent 60%); }
+  .close-in { position: absolute; inset: 0; padding: 24mm 24mm 18mm; display: flex; flex-direction: column; }
+  .close .kicker { color: var(--gold-soft); }
+  .close h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 26pt; color: #FDFCFA; }
+  .roll { margin-top: 9mm; }
+  .roll-row { display: flex; gap: 6mm; padding: 4.6mm 0; border-bottom: .26mm solid rgba(196,154,91,.22); align-items: flex-start; }
+  .roll-row:last-child { border-bottom: none; }
+  .roll-n { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 21pt; font-weight: 600; color: var(--gold); width: 10mm; flex-shrink: 0; line-height: 1; margin-top: .5mm; }
+  .roll-t { font-size: 10.5pt; font-weight: 700; color: #F2EDE4; }
+  .roll-d { font-size: 9.5pt; color: #AEBACB; line-height: 1.55; margin-top: 1mm; max-width: 138mm; }
+  .letter { margin-top: 10mm; border-left: .8mm solid var(--gold); padding-left: 7mm; }
+  .letter p { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 13.5pt; line-height: 1.55; color: #EFEAE0; font-style: italic; max-width: 150mm; }
+  .letter .sig { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 12.5pt; color: var(--gold-soft); margin-top: 4mm; font-style: italic; }
+  .contact { margin-top: auto; display: flex; align-items: center; justify-content: space-between; border-top: .3mm solid rgba(196,154,91,.3); padding-top: 6mm; }
+  .contact .who .nm { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 15pt; letter-spacing: .22em; text-transform: uppercase; color: #F5F1E9; font-weight: 600; }
+  .contact .who .rl { font-size: 6.5pt; letter-spacing: .3em; text-transform: uppercase; color: var(--gold-soft); margin-top: 1.4mm; }
+  .contact .how { text-align: right; font-size: 8.5pt; color: #BCC7D6; line-height: 1.8; }
+  .contact .how b { color: #F2EDE4; font-weight: 600; letter-spacing: .06em; }
+  .close .fine-print { font-size: 6.8pt; color: #7E8DA3; margin-top: 6mm; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 — COVER ============ -->
+<div class="pg cover">
+  <div class="glow"></div>
+  <div class="rule-v"></div>
+  <div class="cover-in">
+    <svg class="mark" viewBox="0 0 100 92" fill="none" stroke="#C49A5B" stroke-width="3.2">
+      <!-- house-with-H mark, drawn after the firm's emblem -->
+      <path d="M14 46 L50 14 L86 46" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M68 20 L68 8 L80 8 L80 31" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M24 44 L24 88 M76 44 L76 88" stroke-linecap="round"/>
+      <g stroke="none" fill="#C49A5B">
+        <rect x="33" y="62" width="8" height="8" rx="1"/>
+        <rect x="46" y="62" width="8" height="8" rx="1"/>
+        <rect x="59" y="62" width="8" height="8" rx="1"/>
+      </g>
+    </svg>
+    <div class="firm">H&nbsp;ANNANDALE</div>
+    <div class="firm-sub">Attorneys Inc.</div>
+    <div class="cover-rule"></div>
+    <h1>The Conveyancing<br><em>Pipeline</em></h1>
+    <div class="tag">Every transfer file — its stage, its blockers and its next step — on one private screen. Built around the way a conveyancer actually works.</div>
+    <div class="for">
+      <div class="for-label">A private preview prepared for</div>
+      <div class="for-name">Maryke Dique</div>
+      <div class="for-role">Conveyancing &nbsp;|&nbsp; H Annandale Attorneys Inc.</div>
+      <div class="for-name" style="font-size:14.5pt;">Hesca Annandale</div>
+      <div class="for-role" style="margin-bottom:0;">Director &nbsp;|&nbsp; Attorney</div>
+      <div class="for-firm">59 Bolo Street, Moreleta Park, Pretoria, 0181</div>
+    </div>
+    <div class="cover-foot">
+      <div class="l">Prepared by <b>Annè Kruger</b> · 28 July 2026</div>
+      <div class="r">Concept preview<br>All file data inside is fictional</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE 2 — THE IDEA + STAGES ============ -->
+<div class="pg light">
+  <div class="light-in">
+    <div class="kicker">The idea</div>
+    <h2 class="title">From instruction to registration, without the mental juggling.</h2>
+    <p class="lead">A single transfer lives in a dozen places at once — the OTP, SARS eFiling, the municipal rates portal, two banks' attorneys, the estate agent, the Deeds Office. The <b>real</b> status of the file lives in your head and your inbox. When twenty files run at once, that is where things stall: a rates figure nobody chased, a bond condition quietly expiring, guarantees that don't yet match the cancellation figures.</p>
+    <div class="idea">
+      <svg class="mark" viewBox="0 0 100 92" fill="none" stroke="#C49A5B" stroke-width="3.4">
+        <path d="M14 46 L50 14 L86 46" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M68 20 L68 8 L80 8 L80 31" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 44 L24 88 M76 44 L76 88" stroke-linecap="round"/>
+        <g stroke="none" fill="#C49A5B"><rect x="33" y="62" width="8" height="8" rx="1"/><rect x="46" y="62" width="8" height="8" rx="1"/><rect x="59" y="62" width="8" height="8" rx="1"/></g>
+      </svg>
+      <p><b>The Pipeline is a private app for the two of you</b> — phone and desktop. Every matter is a live file that shows its stage, what is blocking it, and the next action with a date against it. PIN-protected per person, works even with no signal, nothing to install — it opens from a private link and sits on the home screen like any app.</p>
+    </div>
+    <div class="stages">
+      <div class="stage-row"><div class="st-n">1</div><div><div class="st-t">Instruction received</div><div class="st-d">File opened in seconds — property, parties, price, agent. A reference like T26/018 from day one.</div></div></div>
+      <div class="stage-row"><div class="st-n">2</div><div><div class="st-t">Due diligence</div><div class="st-d">OTP checked, title deed search, servitudes &amp; interdicts, suspensive conditions diarised with deadlines.</div></div></div>
+      <div class="stage-row"><div class="st-n">3</div><div><div class="st-t">Drafting &amp; signing</div><div class="st-d">FICA for both parties, POA and declarations drafted, signing appointments tracked to done.</div></div></div>
+      <div class="stage-row"><div class="st-n">4</div><div><div class="st-t">Clearances &amp; transfer duty</div><div class="st-d">SARS duty receipt, municipal rates clearance, HOA / body-corporate consent, compliance certificates.</div></div></div>
+      <div class="stage-row"><div class="st-n">5</div><div><div class="st-t">Guarantees &amp; bond sync</div><div class="st-d">Cancellation figures vs guarantees, deposit safe in trust — the three-attorney handshake in one view.</div></div></div>
+      <div class="stage-row"><div class="st-n">6</div><div><div class="st-t">Ready to lodge</div><div class="st-d">Everything signed and certified; simultaneous lodgement arranged with bond &amp; cancellation attorneys.</div></div></div>
+      <div class="stage-row"><div class="st-n">7</div><div><div class="st-t">Lodged — in examination</div><div class="st-d">The 7–10 working-day countdown, with exam queries logged so nothing gets rejected twice.</div></div></div>
+      <div class="stage-row"><div class="st-n">8</div><div><div class="st-t">Registered</div><div class="st-d">Ownership passes. Disbursements, agent commission, final statements — the registration-day runbook.</div></div></div>
+      <div class="stage-row"><div class="st-n filled">9</div><div><div class="st-t">Settled &amp; closed</div><div class="st-d">Keys confirmed, the registered title deed delivered, file archived — and it counts on your dashboard.</div></div></div>
+    </div>
+    <div class="engine-note">The engine behind this already runs a commercial sales pipeline in daily production use — this is the same proven machine, rebuilt file-by-file around conveyancing.</div>
+    <div class="foot"><div class="f-l">H Annandale Attorneys Inc. · The Conveyancing Pipeline — Preview</div><div class="f-r">2</div></div>
+  </div>
+</div>
+
+<!-- ============ PAGE 3 — MOCK SCREENS ============ -->
+<div class="pg light">
+  <div class="light-in">
+    <div class="kicker">What it looks like</div>
+    <h2 class="title">Three of the screens.</h2>
+    <div class="mock-row">
+      <!-- Phone A: the board -->
+      <div>
+        <div class="phone"><div class="scr">
+          <div class="a-hdr"><div class="a-mark">H</div><div><div class="t">H Annandale — Conveyancing</div><div class="s">Transfer pipeline · Maryke</div></div></div>
+          <div class="a-body">
+            <div class="a-kpis">
+              <div class="a-kpi"><div class="v">7</div><div class="k">Active files</div></div>
+              <div class="a-kpi"><div class="v">2</div><div class="k">In exam</div></div>
+              <div class="a-kpi"><div class="v money">R41 300</div><div class="k">Fees this month</div></div>
+            </div>
+            <div class="a-sec">Files</div>
+            <div class="a-card">
+              <div class="a-ref">T26/018 · FAERIE GLEN</div>
+              <div class="a-name">12 Aloe Ridge Crescent</div>
+              <div class="a-sub">Botha → Naidoo · Keller Williams</div>
+              <div class="a-meta"><span class="chip amber">7 · In exam</span><span class="a-price">R2 150 000</span></div>
+              <div class="a-next">Day 6 of ±10 in exam · <b>confirm registration date</b></div>
+            </div>
+            <div class="a-card">
+              <div class="a-ref">T26/016 · THE WILLOWS</div>
+              <div class="a-name">Unit 41, The Willows 80</div>
+              <div class="a-sub">Steyn → Mokoena · Sectional title</div>
+              <div class="a-meta"><span class="chip gold">4 · Clearances</span><span class="a-price">R980 000</span><span class="chip red">1 blocker</span></div>
+              <div class="a-next late">Rates clearance outstanding — <b>chase municipality (overdue)</b></div>
+            </div>
+            <div class="a-card">
+              <div class="a-ref">T26/021 · MORELETA PARK</div>
+              <div class="a-name">5 Kiepersol Street</div>
+              <div class="a-sub">Van Wyk → Dlamini · Private sale</div>
+              <div class="a-meta"><span class="chip navy">3 · Drafting</span><span class="a-price">R1 675 000</span></div>
+              <div class="a-next">Sellers sign Thursday 14:00 · <b>pack ready</b></div>
+            </div>
+            <div class="a-card">
+              <div class="a-ref">T26/009 · WAPADRAND</div>
+              <div class="a-name">27 Bosbok Road</div>
+              <div class="a-sub">Fourie → Pillay · RE/MAX</div>
+              <div class="a-meta"><span class="chip green">5 · Guarantees</span><span class="a-price">R3 400 000</span></div>
+              <div class="a-next">Guarantees in · <b>check against cancellation figures</b></div>
+            </div>
+            <div class="a-card">
+              <div class="a-ref">T26/012 · GARSFONTEIN</div>
+              <div class="a-name">Unit 8, Villa Toscana</div>
+              <div class="a-sub">Nel → Khumalo · Sectional title</div>
+              <div class="a-meta"><span class="chip green">8 · Registered</span><span class="a-price">R1 250 000</span></div>
+              <div class="a-next">Registered 21 Jul · <b>final statements out</b></div>
+            </div>
+          </div>
+          <div class="a-tabs"><div class="a-tab on">Board</div><div class="a-tab">My Day</div><div class="a-tab">Dash</div><div class="a-tab">Vault</div></div>
+        </div></div>
+        <div class="phone-label">The board</div>
+        <div class="phone-note">Every live file — stage, price, and the one next action. Blockers surface in red.</div>
+      </div>
+      <!-- Phone B: inside a file -->
+      <div>
+        <div class="phone"><div class="scr">
+          <div class="a-hdr"><div class="a-mark">H</div><div><div class="t">T26/016 · Unit 41, The Willows</div><div class="s">Steyn → Mokoena · R980 000 · day 24</div></div></div>
+          <div class="a-body">
+            <div class="a-stepper"><div class="a-step done"></div><div class="a-step done"></div><div class="a-step done"></div><div class="a-step done"></div><div class="a-step"></div><div class="a-step"></div><div class="a-step"></div><div class="a-step"></div><div class="a-step"></div></div>
+            <div class="a-block">
+              <div class="bt">Waiting on</div>
+              <div class="bi">• Rates clearance certificate — figures paid 18 Jul, certificate pending<br>• Levy consent — body corporate managing agent</div>
+            </div>
+            <div class="a-sec">Clearances &amp; duty</div>
+            <div class="a-card" style="padding-top:1.2mm;padding-bottom:1.2mm;">
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">FICA verified — seller &amp; buyer</div></div>
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">Transfer duty receipt — SARS</div></div>
+              <div class="a-check"><div class="a-box pend">…</div><div class="cl">Rates clearance certificate</div></div>
+              <div class="a-check"><div class="a-box pend">…</div><div class="cl">Levy consent — body corporate</div></div>
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">Electrical compliance certificate</div></div>
+            </div>
+            <div class="a-sec">Trust</div>
+            <div class="a-card" style="padding-top:1.4mm;padding-bottom:1.4mm;">
+              <div class="a-check" style="border-bottom:none;"><div class="a-box on">✓</div><div class="cl dim">Deposit in trust — R98 000 · 02 Jul</div></div>
+            </div>
+            <div class="a-sec">Key dates</div>
+            <div class="a-card" style="padding-top:1.2mm;padding-bottom:1.2mm;">
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">OTP signed — 26 Jun</div></div>
+              <div class="a-check"><div class="a-box"></div><div class="cl">Lodgement target — 11 Aug</div></div>
+              <div class="a-check"><div class="a-box"></div><div class="cl">Registration expected — ±25 Aug</div></div>
+            </div>
+            <div class="a-gold-card"><div class="gt">Next step</div><div class="gi">Phone Tshwane metro — chase the certificate. Due Wednesday.</div></div>
+            <div class="a-sec" style="margin-top:2mm;">Linked attorneys</div>
+            <div class="a-card" style="padding-top:1.2mm;padding-bottom:1.2mm;">
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">Bond — VDM Inc · guarantees issued</div></div>
+              <div class="a-check"><div class="a-box on">✓</div><div class="cl dim">Cancellation — Snyman Inc · figures in</div></div>
+            </div>
+          </div>
+          <div class="a-tabs"><div class="a-tab on">File</div><div class="a-tab">Checklist</div><div class="a-tab">Money</div><div class="a-tab">Notes</div></div>
+        </div></div>
+        <div class="phone-label">Inside a file</div>
+        <div class="phone-note">The file knows what's missing — and holds the whole three-attorney picture.</div>
+      </div>
+      <!-- Phone C: My Day -->
+      <div>
+        <div class="phone"><div class="scr">
+          <div class="a-hdr"><div class="a-mark">H</div><div><div class="t">My Day</div><div class="s">Monday · 5 files need you today</div></div></div>
+          <div class="a-body">
+            <div class="a-day-greet">Goeiemôre, Maryke</div>
+            <div class="a-day-date">Monday 28 July · 2 lodged files in exam</div>
+            <div class="a-sec" style="color:var(--a-red);">Overdue · 1</div>
+            <div class="a-card" style="border-left:.8mm solid var(--a-red);">
+              <div class="a-name" style="font-size:6.2pt;">Guarantees due — bond attorneys</div>
+              <div class="a-sub">T26/013 · 2 days late · Absa → cancellation figures already in</div>
+            </div>
+            <div class="a-sec">Due today · 3</div>
+            <div class="a-card" style="padding-top:1.2mm;padding-bottom:1.2mm;">
+              <div class="a-check"><div class="a-box"></div><div class="cl">Chase rates certificate — Tshwane <span style="color:var(--a-faint);">· T26/016</span></div></div>
+              <div class="a-check"><div class="a-box"></div><div class="cl">Signing 14:00 — sellers <span style="color:var(--a-faint);">· T26/021</span></div></div>
+              <div class="a-check"><div class="a-box"></div><div class="cl">Send final statements <span style="color:var(--a-faint);">· T26/012</span></div></div>
+            </div>
+            <div class="a-sec">Watch-list</div>
+            <div class="a-card" style="padding-top:1.2mm;padding-bottom:1.2mm;">
+              <div class="a-check"><div class="a-box pend">!</div><div class="cl">Bond approval deadline in 3 days <span style="color:var(--a-faint);">· T26/022</span></div></div>
+              <div class="a-check"><div class="a-box pend">!</div><div class="cl">Rates cert expires in 12 days <span style="color:var(--a-faint);">· T26/010</span></div></div>
+            </div>
+            <div class="a-gold-card"><div class="gt">Registration watch</div><div class="gi">T26/018 on prep at the Deeds Office — registration expected Friday.</div></div>
+            <div class="a-sec" style="margin-top:2mm;">Month so far</div>
+            <div class="a-kpis">
+              <div class="a-kpi"><div class="v">3</div><div class="k">Registered</div></div>
+              <div class="a-kpi"><div class="v money">R41 300</div><div class="k">Fees</div></div>
+              <div class="a-kpi"><div class="v">62</div><div class="k">Avg days</div></div>
+            </div>
+          </div>
+          <div class="a-tabs"><div class="a-tab">Board</div><div class="a-tab on">My Day</div><div class="a-tab">Dash</div><div class="a-tab">Vault</div></div>
+        </div></div>
+        <div class="phone-label">My Day</div>
+        <div class="phone-note">The morning cockpit — overdue first, then today, then deadlines creeping closer.</div>
+      </div>
+    </div>
+    <div class="mock-caption">Illustrative screens in the app's actual design language — every file, party, amount and date above is fictional.</div>
+    <div class="foot"><div class="f-l">H Annandale Attorneys Inc. · The Conveyancing Pipeline — Preview</div><div class="f-r">3</div></div>
+  </div>
+</div>
+
+<!-- ============ PAGE 4 — WHAT IT WATCHES ============ -->
+<div class="pg light">
+  <div class="light-in">
+    <div class="kicker">Under the hood</div>
+    <h2 class="title">The system watches, so you don't have to.</h2>
+    <p class="lead">Each file carries a living checklist built from how a transfer really runs — and the app turns all of it into reminders, blockers and a clean picture of the practice.</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <h3>The checklist brain</h3>
+        <p>Every file is born with its full checklist: <b>FICA</b> for both parties, POA &amp; declarations, <b>SARS transfer duty receipt</b>, municipal <b>rates clearance</b>, HOA / body-corporate consent, compliance certificates. Tick as you go — the file knows what is still missing.</p>
+      </div>
+      <div class="feat">
+        <h3>Three attorneys, one heartbeat</h3>
+        <p>Bond attorney and cancellation attorney tracked per file: figures requested, <b>guarantees received and checked against cancellation figures</b>, everyone ready for <b>simultaneous lodgement</b>. The coordination you carry in your head, written down.</p>
+      </div>
+      <div class="feat">
+        <h3>Deadlines that police themselves</h3>
+        <p>Suspensive conditions with dates, <b>bond-approval deadlines</b>, rates clearance <b>expiry warnings</b>, the exam countdown after lodgement, and a nudge when any file sits untouched too long. It all lands on <b>My Day</b> — nothing relies on memory.</p>
+      </div>
+      <div class="feat">
+        <h3>The money picture</h3>
+        <p>Deposit received in trust, guarantees in, registration-day disbursements ticked off, and your <b>fee per file</b> rolling into a monthly dashboard — registrations, fees, and average days from instruction to registration.</p>
+        <p class="fine">A workflow tracker alongside your trust accounting — never a replacement for it.</p>
+      </div>
+      <div class="feat">
+        <h3>Registration-day runbook</h3>
+        <p>The moment a file registers: settle the seller's bond, agent commission, final <b>line-item statements to buyer and seller</b>, keys released, registered title deed delivered. A short list that ends with a closed, archived file.</p>
+      </div>
+      <div class="feat">
+        <h3>Private by design</h3>
+        <p>A private link for the two of you — <b>each with your own PIN</b>. The data belongs to the practice, backed up daily, and the app keeps working offline in a signal dead-spot (Deeds Office basements included).</p>
+      </div>
+    </div>
+    <div class="vitals">
+      <div><h4>Proven engine</h4><p>The same core has run a demanding commercial pipeline in daily use since early 2026 — this is not a first attempt.</p></div>
+      <div><h4>Nothing to install</h4><p>It opens from a private link and sits on the home screen like any app — phone, tablet and desktop alike.</p></div>
+      <div><h4>Yours to keep</h4><p>One-tap backup of every file, exportable any day. No subscriptions to a stranger, no lock-in.</p></div>
+    </div>
+    <div class="foot"><div class="f-l">H Annandale Attorneys Inc. · The Conveyancing Pipeline — Preview</div><div class="f-r">4</div></div>
+  </div>
+</div>
+
+<!-- ============ PAGE 5 — ROLLOUT + LETTER ============ -->
+<div class="pg close">
+  <div class="glow"></div>
+  <div class="close-in">
+    <div class="kicker">Getting it into your hands</div>
+    <h2>How it would land.</h2>
+    <div class="roll">
+      <div class="roll-row"><div class="roll-n">1</div><div><div class="roll-t">A working first version</div><div class="roll-d">The Pipeline opens from a private link and goes onto your phone's home screen like any app. Maryke's live files go in first — from then on the board is real.</div></div></div>
+      <div class="roll-row"><div class="roll-n">2</div><div><div class="roll-t">Shaped around how you actually work</div><div class="roll-d">A week of using it, then we bend it to the practice — your stage names, your checklist wording, the reports Hesca wants to see. Small changes land in days, not months.</div></div></div>
+      <div class="roll-row"><div class="roll-n">3</div><div><div class="roll-t">Two people, every device, one truth</div><div class="roll-d">Maryke and Hesca each sign in with their own PIN, and every phone and desktop shows the same live pipeline — with the month's registrations and fees on the dashboard.</div></div></div>
+    </div>
+    <div class="letter">
+      <p>This preview is the shape of it, not a promise of paperwork to come — the engine already exists and has survived daily use in another demanding industry. Rebuilding it around transfers is a small, careful job. Say the word, and the first version will be in your hands.</p>
+      <div class="sig">— Vriendelike groete, Annè</div>
+    </div>
+    <div class="contact">
+      <div class="who">
+        <div class="nm">Annè Kruger</div>
+        <div class="rl">Builder &amp; keeper of the Pipeline</div>
+      </div>
+      <div class="how">
+        <div><b>annekruger3010@gmail.com</b></div>
+        <div>Reply with one word — <b>“yes”</b> — and it begins.</div>
+      </div>
+    </div>
+    <div class="fine-print">This document is a concept preview prepared privately for H Annandale Attorneys Inc. All matters, parties, addresses, amounts and dates shown are fictional and for illustration only. The H Annandale name, mark and colours appear here solely to show the app in the firm's own branding, and remain the property of the firm.</div>
+  </div>
+</div>
+
+</body>
+</html>
