@@ -326,12 +326,17 @@ async function resolveOrg(){
   const BROKERAGE_RATE=0.125, RM_SPLIT=0.5; // legacy: RM nets 6.25% of premium
   // Commission per policy = premium × commRate% (direct % of premium, as per the June book).
   // Falls back to legacy rmPct rows (premium × 12.5% × rmPct%) and finally to 6.25%.
-  function payoutOf(r){
+  // Half of any broker fee is paid across to the RM on top of the commission
+  // (Lourie, 28 Jul 2026): payout = premium x rate% + broker fee / 2.
+  const BROKER_FEE_SHARE=0.5;
+  function feeShareOf(r){ return (+r.brokerFee||0)*BROKER_FEE_SHARE; }
+  function commOf(r){
     const prem=+r.premium||0;
     if(r.commRate!=null) return prem*(+r.commRate/100);
     if(r.rmPct!=null) return prem*BROKERAGE_RATE*(+r.rmPct/100);
     return prem*0.0625;
   }
+  function payoutOf(r){ return commOf(r)+feeShareOf(r); }
   function rateOf(r){
     if(r.commRate!=null) return +r.commRate;
     if(r.rmPct!=null) return +r.rmPct*BROKERAGE_RATE; // rmPct 50 -> 6.25
@@ -411,13 +416,22 @@ async function resolveOrg(){
     portfolio_size:d.portfolioSize||null, stage:d.stage||1, next_step:d.nextStep||null, roadblocks:d.roadblocks||null,
     premium:+d.premium||0, lead_source:d.leadSource||null, health:d.health||'amber',
     stage_entry:d.stageEntryDate||null, last_activity:d.lastActivity||null, archived:!!d.archived, updated_at:d.updatedAt||nowISO()};}
-  function _portRowToApp(r){return {id:r.id, client:r.client, rm:r.rm_slug, premium:+r.premium||0, commRate:(r.comm_rate!=null?+r.comm_rate:6.25),
+  // The broker_fee column may not exist yet on older databases. Learn from the
+  // first server row we see and simply leave the field out of writes until it
+  // does — a missing column must never break saving everything else.
+  let _hasBrokerFeeCol=null;
+  function _portRowToApp(r){
+    if(_hasBrokerFeeCol===null && r && typeof r==='object') _hasBrokerFeeCol=('broker_fee' in r);
+    return _portRowToApp_(r);}
+  function _portRowToApp_(r){return {id:r.id, client:r.client, rm:r.rm_slug, premium:+r.premium||0, commRate:(r.comm_rate!=null?+r.comm_rate:6.25), brokerFee:+r.broker_fee||0,
     commission:+r.commission||0, policy:r.policy_no||'', insurer:r.insurer||'', status:r.status||'Existing', renewal:r.renewal||'',
     lastVisit:r.last_visit||'', movement:r.movement||'', impact:+r.impact||0, notes:r.notes||'', health:r.health||'green', activity:r.activity_json||[]};}
-  function _portAppToRow(p,slug){return {org_id:ORG_ID, rm_slug:slug, client:p.client||'', premium:+p.premium||0,
+  function _portAppToRow(p,slug){const row={org_id:ORG_ID, rm_slug:slug, client:p.client||'', premium:+p.premium||0,
     comm_rate:(p.commRate!=null?+p.commRate:6.25), commission:+p.commission||0, policy_no:p.policy||null, insurer:p.insurer||null,
     status:p.status||'Existing', renewal:p.renewal||null, last_visit:p.lastVisit||null, movement:p.movement||null,
-    impact:+p.impact||0, notes:p.notes||null, health:p.health||'green', activity_json:p.activity||[]};}
+    impact:+p.impact||0, notes:p.notes||null, health:p.health||'green', activity_json:p.activity||[]};
+    if(_hasBrokerFeeCol!==false) row.broker_fee=+p.brokerFee||0;
+    return row;}
 
   // Row ids this session has actually seen on the server, per storage key. The save
   // layer deletes ONLY ids in this set that are missing from the outgoing list — so a
@@ -508,8 +522,16 @@ async function resolveOrg(){
         r.id=d.id;upserts.push(r);
       }else inserts.push(r);                                        // legacy non-UUID id — let the DB assign one
     }
-    if(upserts.length){const {error}=await sb.from(table).upsert(upserts,{onConflict:'id'});if(error)throw error;}
-    if(inserts.length){const {error}=await sb.from(table).insert(inserts);if(error)throw error;}
+    // If the database predates the broker_fee column, drop the field and retry
+    // once rather than failing the whole save (golden rule: never lose RM data).
+    const _missingCol=e=>e&&/broker_fee/i.test((e.message||'')+(e.details||''))&&/column|schema cache|find/i.test((e.message||'')+(e.details||''));
+    const _strip=list=>list.map(r=>{const c=Object.assign({},r);delete c.broker_fee;return c;});
+    if(upserts.length){let {error}=await sb.from(table).upsert(upserts,{onConflict:'id'});
+      if(error&&_missingCol(error)){_hasBrokerFeeCol=false;({error}=await sb.from(table).upsert(_strip(upserts),{onConflict:'id'}));}
+      if(error)throw error;}
+    if(inserts.length){let {error}=await sb.from(table).insert(inserts);
+      if(error&&_missingCol(error)){_hasBrokerFeeCol=false;({error}=await sb.from(table).insert(_strip(inserts)));}
+      if(error)throw error;}
     const fresh=await sb.from(table).select('*').eq('org_id',org).eq('rm_slug',route.slug);
     if(fresh.error)throw fresh.error;
     _known[key]=new Set((fresh.data||[]).map(r=>r.id));
@@ -653,7 +675,7 @@ async function resolveOrg(){
     for(const r of RMS){
       (S.portfolio[r.slug]||[]).filter(p=>!p.archived).forEach(p=>{
         const rate=(p.commRate!=null)?+p.commRate:6.25;
-        rows.push({id:uid(),client:p.client,rm:r.slug,premium:+p.premium||0,commRate:rate,policy:p.policy||'',insurer:p.insurer||''});
+        rows.push({id:uid(),client:p.client,rm:r.slug,premium:+p.premium||0,commRate:rate,brokerFee:+p.brokerFee||0,policy:p.policy||'',insurer:p.insurer||''});
       });
     }
     // Seed assistant-salary deductions from the June book (Chantell/Sashka splits)
@@ -911,7 +933,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.07.23c';
+  const APP_VERSION='v2026.07.28a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1185,6 +1207,12 @@ async function resolveOrg(){
         <div class="field"><label>Next renewal</label><input id="cf-ren" type="date" value="${esc(p.renewal||'')}"></div>
       </div>
       <div class="field"><label>Last visit / review</label><input id="cf-vis" type="date" value="${esc(p.lastVisit||'')}"></div>
+      <div class="field-row">
+        <div class="field"><label>Policy number</label><input id="cf-pol" type="text" value="${esc(p.policy||'')}" placeholder="e.g. MRXP03339"></div>
+        <div class="field"><label>Insurer (commission statement)</label><input id="cf-ins" type="text" value="${esc(p.insurer||'')}" placeholder="Who we get the comm stat from"></div>
+      </div>
+      <div class="field"><label>Broker fee (ZAR / month)</label><input id="cf-fee" type="number" step="0.01" value="${p.brokerFee||0}">
+        <div class="help">Half of this is added to the commission on payroll${(+p.brokerFee||0)?` — currently <b>${zar2((+p.brokerFee||0)/2)}</b> a month`:''}.</div></div>
       <div class="field"><label>Account health</label><div class="hp">
         <div class="hp-opt ${p.health==='green'?'sg':''}" data-ch="green">\u{1F7E2} Stable</div>
         <div class="hp-opt ${p.health==='amber'?'sa':''}" data-ch="amber">\u{1F7E1} Watch</div>
@@ -1270,6 +1298,9 @@ async function resolveOrg(){
       rec.premium=parseFloat(document.getElementById('cf-prem').value)||0;
       rec.renewal=document.getElementById('cf-ren').value;
       rec.lastVisit=document.getElementById('cf-vis').value;
+      rec.policy=document.getElementById('cf-pol').value.trim();
+      rec.insurer=document.getElementById('cf-ins').value.trim();
+      rec.brokerFee=parseFloat(document.getElementById('cf-fee').value)||0;
       if(health)rec.health=health;
       await savePortfolio(slug);S.modal=null;render();toast('Client saved');
     };
@@ -1918,7 +1949,7 @@ async function resolveOrg(){
     const allActs=[];all.forEach(p=>(p.activity||[]).forEach(a=>allActs.push(Object.assign({client:p.client,rmName:p.rmName},a))));
     const recentActs=allActs.sort((a,b)=>b.at.localeCompare(a.at)).slice(0,10);
     return `<div class="wrap wrap-wide">
-      <div class="note">The full active book — every won client across the team, with premium volume and the activity your RMs are logging (visits, claims, endorsements). This is book size across the whole floor, not commission. <b>The premium is editable</b> — correct any figure and it saves to that RM's book for everyone.</div>
+      <div class="note">The full active book — every won client across the team, with premium volume and the activity your RMs are logging (visits, claims, endorsements). This is book size across the whole floor, not commission. <b>Premium, policy number, insurer and broker fee are all editable</b> — correct any figure and it saves to that RM's book for everyone. <b>Half of the broker fee is added to that RM's commission on payroll.</b></div>
       <div class="kpis">
         <div class="kpi"><div class="kpi-l">Active clients</div><div class="kpi-v">${all.length}</div></div>
         <div class="kpi"><div class="kpi-l">Book premium</div><div class="kpi-v mono" style="font-size:17px;">${zar(bookPrem)}</div></div>
@@ -1938,10 +1969,13 @@ async function resolveOrg(){
       </div>
       ${all.length>1?searchBox('cmdcli-search','Search clients by name or RM…'):''}
       <div class="card" style="padding:6px 0;"><table id="tbl-cmdcli">
-        <tr><th>Client</th><th>RM</th><th>Premium</th><th>Renewal</th><th>Last visit</th><th>Health</th></tr>
+        <tr><th>Client</th><th>RM</th><th>Premium</th><th>Policy no.</th><th>Insurer (comm stat)</th><th>Broker fee</th><th>Renewal</th><th>Last visit</th><th>Health</th></tr>
         ${shown.map(p=>{const oc=(p.activity||[]).some(a=>a.type==='claim'&&!a.resolved);
           return `<tr><td><b>${esc(p.client)}</b>${oc?' <span class="stale-tag" style="margin:0;background:var(--red-soft);color:var(--red);">claim</span>':''}</td>
           <td>${esc(p.rmName)}</td><td><input class="cli-prem" data-slug="${p.rmSlug}" data-id="${p.id}" type="number" step="0.01" value="${p.premium||0}" style="width:104px;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
+          <td><input class="cli-f" data-f="policy" data-slug="${p.rmSlug}" data-id="${p.id}" type="text" value="${esc(p.policy||'')}" placeholder="—" style="width:120px;font-family:'IBM Plex Mono';font-size:11.5px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
+          <td><input class="cli-f" data-f="insurer" data-slug="${p.rmSlug}" data-id="${p.id}" type="text" value="${esc(p.insurer||'')}" placeholder="—" style="width:132px;font-size:11.5px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
+          <td><input class="cli-f" data-f="brokerFee" data-slug="${p.rmSlug}" data-id="${p.id}" type="number" step="0.01" value="${p.brokerFee||0}" title="Half of this is added to the RM's commission on payroll" style="width:92px;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
           <td class="mono" style="${soon(p.renewal)?'color:var(--accent-ink);font-weight:700;':''}">${esc(p.renewal||'—')}</td>
           <td class="mono">${esc(p.lastVisit||'—')}</td>
           <td><span class="hb hb-${p.health}"><span class="dot"></span>${HEALTH[p.health]}</span></td></tr>`;}).join('')}
@@ -1961,6 +1995,25 @@ async function resolveOrg(){
     document.querySelectorAll('[data-cbrm]').forEach(b=>b.onclick=()=>{S._cmdBookRM=b.dataset.cbrm;render();});
     // Correct a book premium straight from Command View. Writes to the OWNING RM's
     // portfolio row (shared) so the fix pulls through to everyone.
+    // Policy number / insurer / broker fee — same merge-safe save path as premium,
+    // and the same rollback if the write fails.
+    document.querySelectorAll('.cli-f').forEach(inp=>{
+      inp.onblur=async()=>{
+        const slug=inp.dataset.slug,id=inp.dataset.id,f=inp.dataset.f;
+        const rec=(S.portfolio[slug]||[]).find(x=>x.id===id); if(!rec)return;
+        const num=(f==='brokerFee');
+        const v=num?(inp.value===''?0:(parseFloat(inp.value)||0)):inp.value.trim();
+        const oldv=num?(+rec[f]||0):(rec[f]||'');
+        if(v===oldv)return;
+        rec[f]=v; rec.updatedAt=nowISO();
+        const label=f==='brokerFee'?'broker fee':(f==='policy'?'policy no.':'insurer');
+        const shown=num?`${zar(oldv)}→${zar(v)}`:`${oldv||'—'}→${v||'—'}`;
+        try{ await savePortfolio(slug);
+          logChange(slug,`${rec.client}: ${label} updated ${shown} by ${viewerName()}`,'update');
+          toast(f==='brokerFee'?'Broker fee saved — half pulls through to payroll':'Saved');
+        }catch(e){ rec[f]=oldv; inp.value=oldv; toast('Save failed — try again'); }
+      };
+    });
     document.querySelectorAll('.cli-prem').forEach(inp=>{
       inp.onblur=async()=>{
         const slug=inp.dataset.slug,id=inp.dataset.id;
@@ -2603,7 +2656,7 @@ async function resolveOrg(){
     const payout=payoutOf;
     const grandPay=rows.reduce((s,x)=>s+payout(x),0);
     return `<div class="wrap wrap-wide">
-      <div class="note">Every RM's clients are loaded from their book with the actual June premium and commission rate. Just edit any <b>premium</b> or <b>rate %</b> and the payout updates itself. Formula: <b>payout = premium × rate %</b>. Standard recurring is 6.25%; new business runs higher (often 50%). Figures save per month.</div>
+      <div class="note">Every RM's clients are loaded from their book with the actual June premium and commission rate. Just edit any <b>premium</b> or <b>rate %</b> and the payout updates itself. Formula: <b>payout = premium × rate % + half the broker fee</b>. The broker fee comes across from Active Clients and is split 50/50, so only half lands in the payout. Standard recurring is 6.25%; new business runs higher (often 50%). Figures save per month.</div>
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px;">
         <div class="field" style="max-width:200px;margin:0;"><label>Payroll month</label><input id="pm" type="month" value="${esc(S.payroll.month)}"></div>
         <div class="kpi" style="flex:1;min-width:180px;"><div class="kpi-l">Total payout, all RMs</div><div class="kpi-v mono" style="font-size:18px;color:var(--green);" id="grand-pay">${zar2(grandPay)}</div></div>
@@ -2620,12 +2673,14 @@ async function resolveOrg(){
             <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0;">${rr.length} client${rr.length===1?'':'s'} · <span data-subpay="${r.slug}">${zar2(subPay)}</span></span>
           </div>
           <div class="card" style="padding:8px 0;">
-            <table><tr><th style="padding-left:12px;">Client</th><th>Premium (R)</th><th>Rate %</th><th>Payout</th><th></th></tr>
-            ${rr.length===0?`<tr><td colspan="5"><div class="empty" style="padding:12px;">No clients on ${esc(r.name)}'s book yet.</div></td></tr>`:
+            <table><tr><th style="padding-left:12px;">Client</th><th>Premium (R)</th><th>Rate %</th><th>Broker fee</th><th>½ fee</th><th>Payout</th><th></th></tr>
+            ${rr.length===0?`<tr><td colspan="7"><div class="empty" style="padding:12px;">No clients on ${esc(r.name)}'s book yet.</div></td></tr>`:
               rr.map(x=>`<tr data-row="${x.id}">
                 <td style="padding-left:12px;"><b>${esc(x.client)}</b>${x.insurer?`<div class="change-time">${esc(x.insurer)}</div>`:''}</td>
                 <td><input class="pay-inp" data-f="premium" data-id="${x.id}" type="number" step="0.01" value="${x.premium||0}"></td>
                 <td><input class="pay-inp pay-pct" data-f="commRate" data-id="${x.id}" type="number" step="0.25" value="${rateOf(x)}"></td>
+                <td><input class="pay-inp" data-f="brokerFee" data-id="${x.id}" type="number" step="0.01" value="${x.brokerFee||0}"></td>
+                <td class="mono" style="color:var(--accent-ink);" data-feeshare="${x.id}">${zar2(feeShareOf(x))}</td>
                 <td class="mono" style="font-weight:700;color:var(--green);" data-payout="${x.id}">${zar2(payout(x))}</td>
                 <td><button class="del-x" data-del="${x.id}">✕</button></td></tr>`).join('')}
             </table>
@@ -2645,6 +2700,7 @@ async function resolveOrg(){
     const recalcRow=(id)=>{
       const r=S.payroll.rows.find(x=>x.id===id);if(!r)return;
       const cell=document.querySelector(`[data-payout="${id}"]`);if(cell)cell.textContent=zar2(payout(r));
+      const fcell=document.querySelector(`[data-feeshare="${id}"]`);if(fcell)fcell.textContent=zar2(feeShareOf(r));
       // subtotal for that RM
       const sub=S.payroll.rows.filter(x=>x.rm===r.rm).reduce((s,x)=>s+payout(x),0);
       const subEl=document.querySelector(`[data-subpay="${r.rm}"]`);if(subEl)subEl.textContent=zar2(sub);
@@ -2656,8 +2712,10 @@ async function resolveOrg(){
       inp.oninput=()=>{
         const id=inp.dataset.id, f=inp.dataset.f;
         const r=S.payroll.rows.find(x=>x.id===id);if(!r)return;
-        if(f==='commRate'){r.commRate=inp.value===''?6.25:(parseFloat(inp.value)||0);delete r.rmPct;}
-        else{r.premium=inp.value===''?0:(parseFloat(inp.value)||0);}
+        const num=inp.value===''?null:(parseFloat(inp.value)||0);
+        if(f==='commRate'){r.commRate=num==null?6.25:num;delete r.rmPct;}
+        else if(f==='brokerFee'){r.brokerFee=num||0;}
+        else{r.premium=num||0;}
         recalcRow(id);
       };
       inp.onblur=async()=>{await savePayroll();};
