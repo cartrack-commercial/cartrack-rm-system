@@ -12,8 +12,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RM System">
-<!-- Supabase client library -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase client library. `defer` is deliberate: as a plain blocking script this one
+     tag stalled the entire page whenever the CDN was slow or unreachable, and the RM
+     stared at nothing until it resolved. Deferred, it downloads alongside the page and
+     the sign-in card paints straight away. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <style>
   .cts *, .cts *::before, .cts *::after { box-sizing: border-box; }
   .cts {
@@ -268,7 +271,12 @@
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Saira:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Loaded without blocking the first paint: media="print" means the browser fetches the
+     sheet but does not wait on it to draw, and onload promotes it to the real stylesheet.
+     Headings land in the system font for a moment on a cold load, which is a far better
+     trade than a blank screen on a weak signal. -->
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
 <div class="cts" id="cts-root"><div style="padding:60px;text-align:center;color:#5E6675;font-family:'IBM Plex Sans',sans-serif;">Loading…</div></div>
 <div id="dr-root"></div>
@@ -285,16 +293,30 @@ const SUPABASE_URL = 'https://govvmqgpxzbqghzgcitb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvdnZtcWdweHpicWdoemdjaXRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjg3NzgsImV4cCI6MjA5ODkwNDc3OH0.6C2ysydRz-aXARQTAdMtQQsf5MibGHo052K0NbG3ORU';
 
 let sb = null;
-try {
-  if (window.supabase && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('PASTE_')) {
-    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('[Cartrack] Supabase client ready');
-  } else {
-    console.warn('[Cartrack] Supabase key not set — running on local fallback storage');
+function _initSb() {
+  if (sb) return;
+  try {
+    if (window.supabase && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('PASTE_')) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('[Cartrack] Supabase client ready');
+    } else {
+      console.warn('[Cartrack] Supabase not available yet — local fallback storage');
+    }
+  } catch (e) {
+    console.error('[Cartrack] Supabase init failed:', e);
   }
-} catch (e) {
-  console.error('[Cartrack] Supabase init failed:', e);
 }
+// The library now loads deferred, so it is not on the page when this script runs.
+// Deferred scripts finish before DOMContentLoaded — that is when the client can be
+// built. The 8s cap means a dead CDN degrades to offline mode (writes queue in the
+// outbox and retry) instead of holding the app hostage, and the 'load' retry picks
+// the connection back up if it simply arrived late.
+const _libReady = new Promise(res => {
+  if (document.readyState !== 'loading') res();
+  else document.addEventListener('DOMContentLoaded', res, {once:true});
+  setTimeout(res, 8000);
+}).then(_initSb);
+window.addEventListener('load', () => { if (!sb) _initSb(); }, {once:true});
 /* ORG scope: everything is filtered to this org (Cartrack). Multi-org ready. */
 let ORG_ID = null;
 async function resolveOrg(){
@@ -661,7 +683,15 @@ async function resolveOrg(){
   async function loadRM(slug){const v=await sGet('deals:'+slug);S.deals[slug]=v||[];S.loaded[slug]=true;}
   async function saveRM(slug){return sSet('deals:'+slug,S.deals[slug]);}
   async function loadAll(){await Promise.all(RMS.map(r=>S.loaded[r.slug]?0:loadRM(r.slug)));}
-  async function loadConfig(){S.pins=(await sGet('config:pins'))||{};S.meta=(await sGet('config:meta'))||{};S.logins=(await sGet('config:logins'))||{};S.meta.brendanPass=DEFAULT_BRENDAN_PASS;S.meta.louriePass=DEFAULT_LOURIE_PASS;if(!S.meta.bernardPass)S.meta.bernardPass=DEFAULT_BERNARD_PASS;}
+  // Three independent reads — fetched together, not one after the other. On a phone
+  // each round trip to the database costs ~200ms, and the sign-in screen cannot be
+  // used until all three have landed.
+  async function loadConfig(){
+    const [pins,meta,logins]=await Promise.all([sGet('config:pins'),sGet('config:meta'),sGet('config:logins')]);
+    S.pins=pins||{};S.meta=meta||{};S.logins=logins||{};
+    S.meta.brendanPass=DEFAULT_BRENDAN_PASS;S.meta.louriePass=DEFAULT_LOURIE_PASS;
+    if(!S.meta.bernardPass)S.meta.bernardPass=DEFAULT_BERNARD_PASS;
+  }
   async function savePins(){return sSet('config:pins',S.pins);}
   async function saveLogins(){return sSet('config:logins',S.logins);}
   async function saveMeta(){return sSet('config:meta',S.meta);}
@@ -695,6 +725,14 @@ async function resolveOrg(){
   async function loadLost(slug){const v=await sGet('lost:'+slug);S.lost[slug]=v||[];S.lostLoaded[slug]=true;}
   async function saveLost(slug){return sSet('lost:'+slug,S.lost[slug]);}
   async function loadAllLost(){await Promise.all(RMS.map(r=>S.lostLoaded[r.slug]?0:loadLost(r.slug)));}
+  // Lost leads are only read by the "Not Successful" and Recovery tabs, so they are no
+  // longer pulled at boot — that was seven more round trips in front of the sign-in
+  // screen for data most sign-ins never look at. Fetched on first open instead; the
+  // background refresh then keeps them current because lostLoaded is set.
+  async function lostReady(){
+    if(RMS.every(r=>S.lostLoaded[r.slug]))return;
+    _busy(true);try{await loadAllLost();}catch(e){console.warn('[Cartrack] lost load failed:',e.message);}_busy(false);
+  }
   function allLost(){const o=[];RMS.forEach(r=>(S.lost[r.slug]||[]).forEach(l=>o.push(Object.assign({rmSlug:r.slug,rmName:r.name},l))));
     return o.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));}
 
@@ -744,23 +782,33 @@ async function resolveOrg(){
   // ---------- SELF-HEALING SEED (idempotent; only fills EMPTY stores, never clobbers edits) ----------
   // Runs every load. Because it only writes to stores that are currently empty, it's safe to
   // repeat — and it self-heals the case where a flag was set but a data write had failed.
+  // Now runs AFTER the load and decides off the state already in memory. It used to
+  // re-read every RM's deals and portfolio straight back off the server — two
+  // sequential round trips per RM, ~15 in total, on every single page load, to answer
+  // a question the load had just answered. On a phone that alone was several seconds
+  // of blank screen. It touches the network only when something really is empty,
+  // which after launch is never.
   async function seedIfEmpty(){
+    const jobs=[];
     for(const r of RMS){
-      const cur=await sGet('deals:'+r.slug);
-      if((!cur||cur.length===0) && SEED_DEALS[r.slug] && SEED_DEALS[r.slug].length){
-        await sSet('deals:'+r.slug, SEED_DEALS[r.slug].map(d=>Object.assign({},d)));
+      if(!(S.deals[r.slug]||[]).length && SEED_DEALS[r.slug] && SEED_DEALS[r.slug].length){
+        S.deals[r.slug]=SEED_DEALS[r.slug].map(d=>Object.assign({},d));
+        jobs.push(sSet('deals:'+r.slug,S.deals[r.slug]));
       }
-      const curP=await sGet('portfolio:'+r.slug);
-      if(!curP||curP.length===0){
+      if(!(S.portfolio[r.slug]||[]).length){
         const mine=SEED_PORTFOLIO.filter(p=>p.rm===r.slug);
-        if(mine.length)await sSet('portfolio:'+r.slug, mine.map(p=>Object.assign({},p)));
+        if(mine.length){
+          S.portfolio[r.slug]=mine.map(p=>Object.assign({},p));
+          jobs.push(sSet('portfolio:'+r.slug,S.portfolio[r.slug]));
+        }
       }
     }
     // House account (Cartrack internal lead-gen) — team pipeline, no login, no commission
-    const curH=await sGet('deals:__house');
-    if((!curH||curH.length===0)&&SEED_HOUSE.length){
-      await sSet('deals:__house', SEED_HOUSE.map(d=>Object.assign({},d)));
+    if(!(S.house||[]).length && SEED_HOUSE.length){
+      S.house=SEED_HOUSE.map(d=>Object.assign({},d));S.deals['__house']=S.house;
+      jobs.push(sSet('deals:__house',S.house));
     }
+    if(jobs.length)await Promise.all(jobs);
   }
 
   function toast(m){S.toast=m;render();setTimeout(()=>{S.toast=null;render();},2200);}
@@ -871,6 +919,9 @@ async function resolveOrg(){
       const note=document.getElementById('l-note').value.trim();
       const rec={id:uid(),prospectName:d.prospectName,industry:d.industry||'',portfolioSize:d.portfolioSize||'',
         premium:+d.premium||0,leadSource:d.leadSource||'',stageAtLoss:d.stage||1,reason,note,at:nowISO()};
+      // Lost leads are no longer pulled at boot, so fetch this RM's list before appending —
+      // pushing onto an unloaded (empty) array would save one record over all the others.
+      if(!S.lostLoaded[slug])await loadLost(slug);
       S.lost[slug]=S.lost[slug]||[];S.lost[slug].push(rec);
       await saveLost(slug);
       S.deals[slug]=(S.deals[slug]||[]).filter(x=>x.id!==id);
@@ -917,7 +968,49 @@ async function resolveOrg(){
       if(m)console.log('[Cartrack] won-deal sweep: cleared',m,'won deal(s) off active pipelines');
     }catch(e){console.warn('[Cartrack] won sweep skipped:',e.message);}
   }
-  (async function(){await loadConfig();await _obReplay();/* push any save a killed mobile tab never confirmed BEFORE pulling server state */await seedIfEmpty();await loadAll();await loadAllPortfolio();await _backfillWonClients();await loadHouse();await loadAllLost();S.pendingImport=captureImport();S.screen='gate';render();})();
+  // ---------- BOOT ----------
+  // The role-picker on the sign-in card needs no server data at all, so it is painted
+  // immediately and everything else loads behind it. The old chain awaited every phase
+  // one after another — roughly 25 network round trips — before drawing a single pixel,
+  // which on mobile data left the RM looking at a blank screen for several seconds.
+  //
+  // Two checkpoints still block, deliberately:
+  //   cfgReady()  — before any PIN screen. S.pins arriving late would make a real PIN
+  //                 look unset and walk the RM through overwriting it.
+  //   bootReady() — before the app opens. A half-loaded pipeline that the RM then saved
+  //                 would write an empty book over their real one.
+  // Both are normally already resolved by the time a human has picked a role and typed.
+  let _cfgDone=false,_bootDone=false;
+  const _cfg=(async function(){
+    await _libReady;     // the Supabase client is built once the deferred library lands
+    await loadConfig();
+    _cfgDone=true;
+  })();
+  const _boot=(async function(){
+    await _cfg;
+    await _obReplay();   // push any save a killed mobile tab never confirmed BEFORE pulling server state
+    await Promise.all([loadAll(),loadAllPortfolio(),loadHouse()]);
+    await seedIfEmpty();
+    S.pendingImport=captureImport();
+    _bootDone=true;
+  })();
+  // One-time migrations — they only ever run once and are guarded by their own flags,
+  // so they must not stand between the RM and their pipeline.
+  _boot.then(()=>_backfillWonClients()).catch(e=>console.warn('[Cartrack] boot:',e.message));
+
+  function _busy(on){
+    let el=document.getElementById('boot-busy');
+    if(!on){if(el)el.remove();return;}
+    if(el)return;
+    el=document.createElement('div');el.id='boot-busy';
+    el.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(11,12,15,.55);color:#fff;font:600 14px/1.5 system-ui,-apple-system,sans-serif;';
+    el.textContent='Loading…';
+    document.body.appendChild(el);
+  }
+  async function cfgReady(){if(_cfgDone)return;_busy(true);try{await _cfg;}catch(e){}_busy(false);}
+  async function bootReady(){if(_bootDone)return;_busy(true);try{await _boot;}catch(e){}_busy(false);}
+  // The first paint happens at the very BOTTOM of this script, not here: renderGate reads
+  // consts declared further down (APP_VERSION), and painting before they initialise throws.
 
   // ================= RENDER ROUTER =================
   function render(){
@@ -933,7 +1026,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.07.28a';
+  const APP_VERSION='v2026.07.30a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -956,11 +1049,14 @@ async function resolveOrg(){
           <div style="color:var(--faint);font-size:10.5px;">${APP_VERSION}</div>
         </div>
       </div></div>`;
-      document.getElementById('g-rm').onclick=()=>{S.gateStep='rm-pick';S.err='';render();};
-      document.getElementById('g-mgr').onclick=()=>{S.gateStep='mgr-pass';S.err='';render();};
-      document.getElementById('g-cmd').onclick=()=>{S.gateStep='cmd-pass';S.err='';render();};
-      document.getElementById('g-pay').onclick=()=>{S.gateStep='pay-pass';S.err='';render();};
-      document.getElementById('g-op').onclick=()=>{S.gateStep='op-pass';S.err='';render();};
+      // Every one of these leads to a passcode screen, and a passcode cannot be judged
+      // until config has landed — so wait here, where the pause costs nothing.
+      const step=s=>async()=>{await cfgReady();S.gateStep=s;S.err='';render();};
+      document.getElementById('g-rm').onclick=step('rm-pick');
+      document.getElementById('g-mgr').onclick=step('mgr-pass');
+      document.getElementById('g-cmd').onclick=step('cmd-pass');
+      document.getElementById('g-pay').onclick=step('pay-pass');
+      document.getElementById('g-op').onclick=step('op-pass');
       return;
     }
     if(S.gateStep==='op-pass'){
@@ -1000,11 +1096,13 @@ async function resolveOrg(){
         <div style="text-align:center;margin-top:12px;"><button class="link-btn" id="back">← Back</button></div>
       </div></div>`;
       document.getElementById('back').onclick=()=>{S.gateStep=null;S.err='';render();};
-      document.querySelectorAll('.op-rm').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.op-rm').forEach(b=>b.onclick=async()=>{
+        await bootReady();
         S.role='rm';S.rm=b.dataset.op;S.tab='mine';S.screen='app';S.gateStep=null;render();
       });
       document.querySelectorAll('[data-opview]').forEach(b=>b.onclick=async()=>{
         const v=b.dataset.opview;
+        await bootReady();
         if(v==='mgr'){S.role='mgr';S.rm='bernard';S.tab='progress';}
         else if(v==='cmd'){S.role='cmd';S.tab='overview';}
         else{S.role='pay';S.payroll=await loadPayroll(DEFAULT_MONTH);S.tab='enter';}
@@ -1043,7 +1141,7 @@ async function resolveOrg(){
       const go=async()=>{
         const pin=document.getElementById('pin').value.trim();
         // Operator master key / Brendan (all-systems) — open this RM without touching their PIN
-        if(isMasterKey(pin)||pin===S.meta.brendanPass){S.role='rm';S.rm=slug;S.tab='mine';S.screen='app';S.gateStep=null;S.err='';render();return;}
+        if(isMasterKey(pin)||pin===S.meta.brendanPass){await bootReady();S.role='rm';S.rm=slug;S.tab='mine';S.screen='app';S.gateStep=null;S.err='';render();return;}
         if(!/^\d{6}$/.test(pin)){S.err='PIN must be 6 digits';render();return;}
         if(hasPin){
           if(S.pins[slug]!==pin){S.err='Wrong PIN. Try again or ask Brendan to reset it.';render();return;}
@@ -1053,6 +1151,7 @@ async function resolveOrg(){
           S.pins[slug]=pin;await savePins();
         }
         S.logins[slug]=nowISO();saveLogins();   // record the RM's own sign-in
+        await bootReady();
         S.role='rm';S.rm=slug;S.tab='mine';S.screen='app';S.gateStep=null;S.err='';render();
       };
       document.getElementById('pin-go').onclick=go;
@@ -1075,6 +1174,7 @@ async function resolveOrg(){
         if(v!==S.meta.bernardPass && v!==S.meta.brendanPass && !isMasterKey(v)){S.err='Incorrect passcode';render();return;}
         if(v===S.meta.bernardPass){S.logins['bernard-mgr']=nowISO();saveLogins();}       // Bernard's Manager sign-in
         else if(v===S.meta.brendanPass){S.logins['brendan']=nowISO();saveLogins();}      // Brendan (all-systems), not operator
+        await bootReady();
         S.role='mgr';S.rm='bernard';S.tab='progress';S.screen='app';S.gateStep=null;S.err='';render();
       };
       document.getElementById('mpass-go').onclick=go;
@@ -1099,6 +1199,7 @@ async function resolveOrg(){
         S.viewer=(v===S.meta.louriePass)?'lourie':'brendan';
         if(v===S.meta.louriePass){S.logins['lourie']=nowISO();saveLogins();}          // record Lourie's own sign-in
         else if(v===S.meta.brendanPass){S.logins['brendan']=nowISO();saveLogins();}   // and Brendan's (not the operator code)
+        await bootReady();
         if(isPay){S.role='pay';S.payroll=await loadPayroll(DEFAULT_MONTH);S.tab='enter';}
         else{S.role='cmd';S.tab='overview';}
         S.screen='app';S.gateStep=null;S.err='';render();
@@ -1732,9 +1833,9 @@ async function resolveOrg(){
     document.getElementById('t-pl').onclick=()=>{S.tab='pipeline';render();};
     document.getElementById('t-ho').onclick=()=>{S.tab='house';S.showArch=false;render();};
     document.getElementById('t-pr').onclick=()=>{S.tab='problems';render();};
-    document.getElementById('t-ls').onclick=()=>{S.tab='lost';render();};
+    document.getElementById('t-ls').onclick=async()=>{await lostReady();S.tab='lost';render();};
     document.getElementById('t-ch').onclick=()=>{S.tab='changes';render();};
-    document.getElementById('t-rc').onclick=()=>{S.tab='recovery';S._recovery=null;render();};
+    document.getElementById('t-rc').onclick=async()=>{await lostReady();S.tab='recovery';S._recovery=null;render();};
     document.getElementById('t-se').onclick=()=>{S.tab='settings';render();};
     const body=document.getElementById('body');
     if(S.tab==='overview'){body.innerHTML=cmdOverview();wireCmdOverview();}
@@ -2853,6 +2954,12 @@ async function resolveOrg(){
       navigator.clipboard?navigator.clipboard.writeText(t).then(()=>toast('Copied for accountant')):toast('Copy not supported');
     };
   }
+
+  // ---------- FIRST PAINT ----------
+  // Last statement in the script so every const the gate reads is initialised.
+  // The boot promises started much earlier, so the data pull is already in flight
+  // by the time this draws the sign-in card.
+  S.screen='gate';render();
 })();
 </script>
 <script>
