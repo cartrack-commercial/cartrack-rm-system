@@ -1071,7 +1071,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.06a';
+  const APP_VERSION='v2026.08.06b';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1465,7 +1465,18 @@ async function resolveOrg(){
   const rmHue=slug=>RM_HUES[slug]||'#F47735';
   function _wonDeals(slug){return (S.deals[slug]||[]).filter(d=>d.stage===7);}
   function _wonInMonth(slug,ym){return _wonDeals(slug).filter(d=>_monthKey(d.updatedAt)===ym);}
-  function _bestMonth(slug,exceptYm){const by={};_wonDeals(slug).forEach(d=>{const k=_monthKey(d.updatedAt);if(!k||k===exceptYm)return;by[k]=(by[k]||0)+(+d.premium||0);});return Math.max(0,...Object.values(by));}
+  // A won deal is copied into Active Clients and then archived off the pipeline, so the
+  // same client exists as two records. The book is the one anybody maintains afterwards —
+  // payroll reads it, Command View edits it inline — so a premium corrected there has to
+  // win here too. Without this, every won-deal figure on My Day keeps quoting whatever the
+  // deal was signed at: Hein corrected Klada to R4,606.34 in the book on 6 Aug 2026 and
+  // "Biggest deal of the month" carried on showing R460,634/m off the stale deal record.
+  function _livePremium(slug,d){
+    const k=_bookKey(d.prospectName);
+    const p=(S.portfolio[slug]||[]).find(x=>_bookKey(x.client)===k);
+    return p?(+p.premium||0):(+d.premium||0);
+  }
+  function _bestMonth(slug,exceptYm){const by={};_wonDeals(slug).forEach(d=>{const k=_monthKey(d.updatedAt);if(!k||k===exceptYm)return;by[k]=(by[k]||0)+_livePremium(slug,d);});return Math.max(0,...Object.values(by));}
   function _renewalsSoon(slug,days){
     return (S.portfolio[slug]||[]).filter(p=>!p.archived&&p.renewal)
       .map(p=>({p,days:Math.ceil((new Date(String(p.renewal).slice(0,10)+'T00:00:00').getTime()-new Date().setHours(0,0,0,0))/864e5)}))
@@ -1474,8 +1485,8 @@ async function resolveOrg(){
   // Rotating monthly honours — more ways to win than rank #1.
   function _titles(){
     const ym=_monthKey(nowISO());const out=[];
-    let big=null;RMS.forEach(r=>_wonInMonth(r.slug,ym).forEach(d=>{if(!big||(+d.premium||0)>(+big.d.premium||0))big={slug:r.slug,d};}));
-    if(big&&+big.d.premium>0)out.push({t:'\u{1F3C6} Biggest deal of the month',who:big.slug,sub:big.d.prospectName+' \u00b7 '+zar(big.d.premium)+'/m'});
+    let big=null;RMS.forEach(r=>_wonInMonth(r.slug,ym).forEach(d=>{const v=_livePremium(r.slug,d);if(!big||v>big.v)big={slug:r.slug,d,v};}));
+    if(big&&big.v>0)out.push({t:'\u{1F3C6} Biggest deal of the month',who:big.slug,sub:big.d.prospectName+' \u00b7 '+zar(big.v)+'/m'});
     let won=null;RMS.forEach(r=>{const n=_wonInMonth(r.slug,ym).length;if(n&&(!won||n>won.n))won={slug:r.slug,n};});
     if(won)out.push({t:'\u{1F514} Most wins this month',who:won.slug,sub:won.n+' deal'+(won.n===1?'':'s')+' signed'});
     let act=null;const wk=Date.now()-7*864e5;
@@ -1506,7 +1517,7 @@ async function resolveOrg(){
       const active=(S.deals[slug]||[]).filter(d=>!d.archived);
       const pipeline=active.reduce((s,d)=>s+(+d.premium||0),0);
       const wonM=_wonInMonth(slug,ym);
-      const wonPrem=wonM.reduce((s,d)=>s+(+d.premium||0),0);
+      const wonPrem=wonM.reduce((s,d)=>s+_livePremium(slug,d),0);
       const best=_bestMonth(slug,ym);
       const book=S.portfolio[slug]||[];
       const bookPrem=book.reduce((s,p)=>s+(+p.premium||0),0);
@@ -1538,7 +1549,7 @@ async function resolveOrg(){
   function _celebrate(slug,d){
     try{const seen=JSON.parse(localStorage.getItem('ct_rm_celebrated')||'{}');if(seen[d.id])return;seen[d.id]=1;localStorage.setItem('ct_rm_celebrated',JSON.stringify(seen));}catch(e){}
     const ym=_monthKey(nowISO());
-    const wonPrem=_wonInMonth(slug,ym).reduce((s,x)=>s+(+x.premium||0),0);
+    const wonPrem=_wonInMonth(slug,ym).reduce((s,x)=>s+_livePremium(slug,x),0);
     const best=_bestMonth(slug,ym);
     const record=best>0&&wonPrem>best;
     const wa='https://wa.me/?text='+encodeURIComponent('\u{1F514} Deal signed \u2014 '+d.prospectName+' \u00b7 '+zar(d.premium)+'/m \u2014 '+_firstName(slug)+' (Cartrack Commercial)');
