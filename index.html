@@ -695,9 +695,54 @@ async function resolveOrg(){
   async function savePins(){return sSet('config:pins',S.pins);}
   async function saveLogins(){return sSet('config:logins',S.logins);}
   async function saveMeta(){return sSet('config:meta',S.meta);}
+  // Match a payroll row back to the client on the RM's book. Names are the only shared
+  // key — payroll rows carry no portfolio id — so compare them forgivingly.
+  function _bookKey(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+  function _bookIndex(){
+    const ix={};
+    for(const r of RMS)(S.portfolio[r.slug]||[]).filter(p=>!p.archived).forEach(p=>{ix[r.slug+'|'+_bookKey(p.client)]=p;});
+    return ix;
+  }
+  // Pull Active Clients → payroll. The broker fee, policy no. and commission-statement
+  // insurer belong to the client and are the same every month, so a month that was
+  // seeded before the fee was captured must be able to pick it up afterwards. Premium
+  // and rate % are deliberately NOT touched: those are edited per month on the payroll
+  // screen and re-syncing them would wipe Brendan's work.
+  //   force=false → only fill blanks (safe, runs on every load)
+  //   force=true  → overwrite fee/policy/insurer from the book ("Refresh from book")
+  // A fee typed on the payroll screen sets feeEdited and is never auto-overwritten,
+  // so a deliberate R0 for one month stays R0.
+  function syncPayrollFromBook(pay,force){
+    if(!pay||!Array.isArray(pay.rows))return 0;
+    const ix=_bookIndex();let changed=0;
+    pay.rows.forEach(r=>{
+      const p=ix[r.rm+'|'+_bookKey(r.client)];if(!p)return;
+      const fee=+p.brokerFee||0;
+      if(force?(+r.brokerFee||0)!==fee:(!(+r.brokerFee)&&fee&&!r.feeEdited)){r.brokerFee=fee;changed++;}
+      if(p.policy&&(force||!r.policy)&&r.policy!==p.policy){r.policy=p.policy;changed++;}
+      if(p.insurer&&(force||!r.insurer)&&r.insurer!==p.insurer){r.insurer=p.insurer;changed++;}
+    });
+    if(force){ // clients won after the month was seeded are missing entirely — add them
+      const have={};pay.rows.forEach(r=>{have[r.rm+'|'+_bookKey(r.client)]=1;});
+      Object.keys(ix).forEach(k=>{
+        if(have[k])return;
+        const p=ix[k],slug=k.slice(0,k.indexOf('|'));
+        pay.rows.push({id:uid(),client:p.client,rm:slug,premium:+p.premium||0,
+          commRate:(p.commRate!=null)?+p.commRate:6.25,brokerFee:+p.brokerFee||0,
+          policy:p.policy||'',insurer:p.insurer||''});
+        changed++;
+      });
+    }
+    return changed;
+  }
   async function loadPayroll(mo){
     const v=await sGet('payroll:'+mo);
-    if(v && v.rows && v.rows.length) return v;           // saved month — return as-is
+    if(v && v.rows && v.rows.length){                     // saved month
+      // A fee captured on Active Clients after this month was seeded would otherwise
+      // never reach payroll — the seed only ever ran once. Fill the blanks on the way in.
+      if(syncPayrollFromBook(v,false)){try{await sSet('payroll:'+mo,v);}catch(e){console.warn('[Cartrack] fee sync:',e.message);}}
+      return v;
+    }
     if(v && v._seeded) return v;                          // opened before & intentionally emptied — respect it
     // First open of this month: pre-fill from every RM's book, using each policy's real
     // commission rate (% of premium) straight from the June actuals. Payout = premium × rate.
@@ -1026,7 +1071,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.07.30a';
+  const APP_VERSION='v2026.08.06a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -2788,7 +2833,11 @@ async function resolveOrg(){
             <div style="padding:10px 12px 4px;"><button class="btn btn-ghost btn-full add-client" data-addrm="${r.slug}" style="font-size:12.5px;">+ Add a client not on the book</button></div>
           </div>`;
       }).join('')}
-      <div style="margin-top:12px;"><button class="btn btn-full" id="paste-rows">Paste a whole list</button></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" style="flex:1;min-width:180px;" id="paste-rows">Paste a whole list</button>
+        <button class="btn btn-ghost" style="flex:1;min-width:180px;" id="sync-book" title="Pull the broker fee, policy number and insurer across from Active Clients, and add any client won since this month was opened">&#8635; Refresh from Active Clients</button>
+      </div>
+      <div class="help" style="margin-top:6px;">Refresh pulls the <b>broker fee</b>, policy number and insurer across from each RM's book, and adds clients won since this month was opened. Premium and rate % are left exactly as you set them.</div>
     </div>`;
   }
   function wirePayEnter(){
@@ -2796,6 +2845,15 @@ async function resolveOrg(){
     document.querySelectorAll('[data-psel]').forEach(b=>b.onclick=()=>{S._paySel=b.dataset.psel;render();});
     document.querySelectorAll('.add-client').forEach(b=>b.onclick=()=>{S.modal={type:'payrow',slug:b.dataset.addrm};render();});
     document.getElementById('paste-rows').onclick=()=>{S.modal={type:'paste'};render();};
+    const sb=document.getElementById('sync-book');
+    if(sb)sb.onclick=async()=>{
+      const before=S.payroll.rows.length;
+      const n=syncPayrollFromBook(S.payroll,true);
+      if(!n){toast('Already up to date with the book');return;}
+      const added=S.payroll.rows.length-before;
+      await savePayroll();render();
+      toast(added?`Updated from the book — ${added} client${added===1?'':'s'} added`:'Broker fees updated from the book');
+    };
     document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{S.payroll.rows=S.payroll.rows.filter(r=>r.id!==b.dataset.del);await savePayroll();render();});
     const payout=payoutOf;
     const recalcRow=(id)=>{
@@ -2815,7 +2873,9 @@ async function resolveOrg(){
         const r=S.payroll.rows.find(x=>x.id===id);if(!r)return;
         const num=inp.value===''?null:(parseFloat(inp.value)||0);
         if(f==='commRate'){r.commRate=num==null?6.25:num;delete r.rmPct;}
-        else if(f==='brokerFee'){r.brokerFee=num||0;}
+        // Typed by hand — from here on the book never silently overwrites it, so a
+        // deliberate R0 for one month stays R0.
+        else if(f==='brokerFee'){r.brokerFee=num||0;r.feeEdited=true;}
         else{r.premium=num||0;}
         recalcRow(id);
       };
