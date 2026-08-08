@@ -600,11 +600,22 @@ async function resolveOrg(){
     return true;
   }
 
+  // Did this key's value come from a read the server actually answered? A failed read and
+  // an empty table are indistinguishable downstream — both surface as null, because _mem is
+  // in-memory only and starts empty on every page load. seedIfEmpty writes the built-in
+  // starter book OVER the server row, so it must never fire on a read it cannot vouch for.
+  const _readOk={};
   async function sGet(k){
     if(sb){
-      try{const v=await _sbGet(_route(k)); if(v!==null){_memSet(k,JSON.stringify(v));} return v!==null?v:_memGet(k);}
-      catch(e){console.warn('[Cartrack] read fell back to local:',k,e.message); return _memGet(k);}
+      try{
+        const v=await _sbGet(_route(k));
+        if(v!==null){_memSet(k,JSON.stringify(v));}
+        _readOk[k]=true;                       // answered — null here means genuinely no row
+        return v!==null?v:_memGet(k);
+      }
+      catch(e){_readOk[k]=false;console.warn('[Cartrack] read fell back to local:',k,e.message); return _memGet(k);}
     }
+    _readOk[k]=false;                          // no client yet: we know nothing about the server
     return _memGet(k);
   }
   // Failed server writes are queued (latest local value wins) and retried every 25s.
@@ -833,27 +844,50 @@ async function resolveOrg(){
   // a question the load had just answered. On a phone that alone was several seconds
   // of blank screen. It touches the network only when something really is empty,
   // which after launch is never.
+  // ⚠️ SEEDING OVERWRITES THE SERVER ROW. It exists only to furnish a brand-new database,
+  // and it must be impossible for it to fire against a database that already has work in it.
+  //
+  // 6 Aug 2026: it did fire, and RMs lost the leads they had loaded. The 30 Jul boot rewrite
+  // made this decide off already-loaded state instead of re-reading each RM first. That read
+  // was carrying safety, not just cost: when a Supabase read fails, sGet falls back to _mem,
+  // _mem is in-memory and empty on a fresh page load, so loadRM stores [] — identical to an
+  // empty table — and the seed wrote itself over a live book.
+  //
+  // Three guards now, and all three must hold before a single row is written:
+  //   1. there is a Supabase client at all;
+  //   2. that key's read was actually answered by the server (_readOk), not fallen back;
+  //   3. a fresh re-read of the key immediately before writing still shows it empty.
+  // Guard 3 costs reads only on the seed path, which on a live database never runs.
   async function seedIfEmpty(){
+    if(!sb)return;                                   // offline or CDN down — we know nothing, touch nothing
+    const seed=async(key,build,apply)=>{
+      if(!_readOk[key])return null;                  // never seed on the back of a read we can't vouch for
+      const rows=build();
+      if(!rows.length)return null;
+      let live=null;
+      try{live=await sGet(key);}catch(e){return null;}
+      if(!_readOk[key])return null;                  // the verify read failed too — stand down
+      if(Array.isArray(live)&&live.length){          // someone's work is already there
+        console.warn('[Cartrack] seed skipped, row is not empty:',key);
+        return null;
+      }
+      apply(rows);
+      return sSet(key,rows);
+    };
     const jobs=[];
     for(const r of RMS){
-      if(!(S.deals[r.slug]||[]).length && SEED_DEALS[r.slug] && SEED_DEALS[r.slug].length){
-        S.deals[r.slug]=SEED_DEALS[r.slug].map(d=>Object.assign({},d));
-        jobs.push(sSet('deals:'+r.slug,S.deals[r.slug]));
-      }
-      if(!(S.portfolio[r.slug]||[]).length){
-        const mine=SEED_PORTFOLIO.filter(p=>p.rm===r.slug);
-        if(mine.length){
-          S.portfolio[r.slug]=mine.map(p=>Object.assign({},p));
-          jobs.push(sSet('portfolio:'+r.slug,S.portfolio[r.slug]));
-        }
-      }
+      jobs.push(seed('deals:'+r.slug,
+        ()=>((S.deals[r.slug]||[]).length||!SEED_DEALS[r.slug])?[]:SEED_DEALS[r.slug].map(d=>Object.assign({},d)),
+        rows=>{S.deals[r.slug]=rows;}));
+      jobs.push(seed('portfolio:'+r.slug,
+        ()=>(S.portfolio[r.slug]||[]).length?[]:SEED_PORTFOLIO.filter(p=>p.rm===r.slug).map(p=>Object.assign({},p)),
+        rows=>{S.portfolio[r.slug]=rows;}));
     }
     // House account (Cartrack internal lead-gen) — team pipeline, no login, no commission
-    if(!(S.house||[]).length && SEED_HOUSE.length){
-      S.house=SEED_HOUSE.map(d=>Object.assign({},d));S.deals['__house']=S.house;
-      jobs.push(sSet('deals:__house',S.house));
-    }
-    if(jobs.length)await Promise.all(jobs);
+    jobs.push(seed('deals:__house',
+      ()=>(S.house||[]).length?[]:SEED_HOUSE.map(d=>Object.assign({},d)),
+      rows=>{S.house=rows;S.deals['__house']=rows;}));
+    await Promise.all(jobs);
   }
 
   function toast(m){S.toast=m;render();setTimeout(()=>{S.toast=null;render();},2200);}
@@ -1071,7 +1105,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.06b';
+  const APP_VERSION='v2026.08.06c';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
