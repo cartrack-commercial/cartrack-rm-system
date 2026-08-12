@@ -656,7 +656,44 @@ async function resolveOrg(){
     if(k.startsWith('portfolio:')){S.portfolio[k.slice(10)]=out;return;}
     if(k.startsWith('lost:')){S.lost[k.slice(5)]=out;return;}
   }
+  // ---- last line of defence before a write ------------------------------------------
+  // Everything else in this file tries to be careful. This assumes something got through
+  // anyway. A save that empties an RM's book, or throws most of it away in one go, is
+  // never a thing a person did on purpose — an RM deletes one lead at a time. On 12 Aug
+  // 2026 a seed wrote three rows over a live book and nothing stopped it.
+  //
+  // Two guards, both on the collection keys only (deals / portfolio / lost):
+  //   1. refuse the write outright when it would clear a non-empty collection, or drop
+  //      more than half of it, and tell the user instead of failing silently;
+  //   2. keep the previous value in `snapshot:<key>` before every overwrite, so a restore
+  //      is the exact rows back — not a reconstruction from breadcrumbs.
+  const _GUARDED=/^(deals|portfolio|lost):/;
+  const _snapAt={};
+  function _guardWrite(k,v){
+    if(!_GUARDED.test(k)||!Array.isArray(v))return null;
+    const prev=_memGet(k);
+    // Small collections are left alone: an RM with two leads is allowed to delete both,
+    // one at a time, and that must not trip an alarm.
+    if(!Array.isArray(prev)||prev.length<3)return null;
+    if(v.length===0)return `would empty ${prev.length} row(s)`;
+    if(prev.length>=4&&v.length<Math.ceil(prev.length/2))return `would drop ${prev.length-v.length} of ${prev.length} row(s)`;
+    return null;
+  }
+  async function _snapshot(k){
+    const prev=_memGet(k);
+    if(!Array.isArray(prev)||!prev.length)return;
+    if(_snapAt[k]&&Date.now()-_snapAt[k]<6e5)return;             // at most one per key per 10 min
+    _snapAt[k]=Date.now();
+    try{await _sbSetAdopt(_route('config:snapshot:'+k),{key:k,at:nowISO(),rows:prev});}catch(e){}
+  }
   async function sSet(k,v){
+    const bad=_guardWrite(k,v);
+    if(bad){
+      console.error('[Cartrack] BLOCKED a destructive write to',k,'—',bad);
+      try{toast('Blocked a change that '+bad+'. Nothing was saved — tell Anne.');}catch(e){}
+      return false;
+    }
+    _snapshot(k);                                   // fire-and-forget; never delays the save
     _memSet(k,JSON.stringify(v)); // always mirror locally so the session stays consistent even if the write fails
     if(!sb)return true;
     _obPut(k,v); // durable flag BEFORE the network attempt — survives the OS killing the page mid-save
@@ -1114,7 +1151,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.06d';
+  const APP_VERSION='v2026.08.12a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1316,6 +1353,7 @@ async function resolveOrg(){
           <button class="tab ${S.tab==='clients'?'active':''}" id="t-cli">My Clients</button>
           <button class="tab ${S.tab==='comm'?'active':''}" id="t-comm">My Commission</button>
           <button class="tab ${S.tab==='board'?'active':''}" id="t-board">Leaderboard</button>
+          <button class="tab ${S.tab==='missing'?'active':''}" id="t-mi">Missing work</button>
         </div>
       </div>
       <div id="body"></div>
@@ -1326,12 +1364,55 @@ async function resolveOrg(){
     document.getElementById('t-cli').onclick=()=>{S.tab='clients';render();};
     document.getElementById('t-comm').onclick=()=>{S.tab='comm';render();};
     document.getElementById('t-board').onclick=()=>{S.tab='board';render();};
+    document.getElementById('t-mi').onclick=async()=>{await lostReady();S.tab='missing';S._missing=null;render();};
     const body=document.getElementById('body');
     if(S.tab==='mine'){body.innerHTML=rmPipeline(slug);wireRMPipeline();wireMyDay(slug);}
     else if(S.tab==='clients'){body.innerHTML=rmClients(slug);wireRmClients(slug);}
     else if(S.tab==='comm'){body.innerHTML='<div class="wrap"><div class="empty" style="padding:40px;">Loading your commission…</div></div>';wireRMCommission(slug);}
+    else if(S.tab==='missing'){body.innerHTML=rmMissing(slug);wireRmMissing(slug);}
     else{body.innerHTML=leaderboard(slug);wireLeaderboard();}
     if(S.modal){if(S.modal.type==='clientedit')wireClientModal();else wireModal();}
+  }
+
+  // ---------- MISSING WORK (RM's own read-only recovery check) ----------
+  // Deliberately has no restore button. Restoring writes to the book, and the judgement
+  // of what should come back belongs with the RM but the write belongs with management —
+  // so this shows an RM exactly what is missing and tells them to send the list on.
+  function rmMissing(slug){
+    const r=S._missing;
+    if(!r)return `<div class="wrap"><div class="empty" style="padding:40px;">Checking your pipeline and your book against the records…</div></div>`;
+    const deals=r.props.filter(p=>p.act!=='mkclient');
+    const clients=r.props.filter(p=>p.act==='mkclient');
+    const row=p=>`<div class="change-item"><div style="flex:1;"><div class="change-txt"><b>${esc(p.name)}</b></div><div class="change-time">${esc(p.desc)}</div></div></div>`;
+    return `<div class="wrap">
+      <div class="note">This is a <b>read-only check</b>. It compares your pipeline and your book against two records the app keeps separately — the change journal, and the payroll snapshots taken from everyone's book each month. Anything below is work the records show but your screens no longer do. <b>Nothing here changes anything.</b> If the list looks right, send it to Anne and she restores it from Command View.</div>
+      ${r.props.length===0?`<div class="empty" style="padding:34px;"><div class="disp">Nothing missing</div>Your pipeline and your book match the records. No action needed.</div>`:`
+        ${deals.length?`<div class="sec-title">Pipeline leads missing (${deals.length})</div><div class="card">${deals.map(row).join('')}</div>`:''}
+        ${clients.length?`<div class="sec-title" style="margin-top:18px;">Active Clients missing (${clients.length})</div><div class="card">${clients.map(row).join('')}</div>`:''}
+        <div class="card" style="margin-top:14px;padding:12px 14px;">
+          <div style="font-family:'Saira';font-weight:800;font-size:13px;margin-bottom:6px;">Send this to Anne</div>
+          <div class="help" style="margin-bottom:8px;">Tap to copy the list, then paste it into WhatsApp.</div>
+          <button class="btn btn-primary btn-full" id="miss-copy">Copy the list</button>
+        </div>`}
+      ${r.info.length?`<div class="sec-title" style="margin-top:18px;">Worth a look (${r.info.length})</div>
+      <div class="card">${r.info.map(t=>`<div class="change-item"><div style="flex:1;" class="change-txt">${esc(t)}</div></div>`).join('')}</div>`:''}
+      <div class="change-time" style="margin-top:10px;">Journal entries scanned: ${r.logCount} &middot; payroll snapshots read: ${r.payrollMonths||0}</div>
+    </div>`;
+  }
+  function wireRmMissing(slug){
+    if(!S._missing){
+      recoveryForRM(slug).then(r=>{S._missing=r;render();})
+        .catch(e=>{S._missing={props:[],info:['Could not run the check: '+e.message],logCount:0,payrollMonths:0};render();});
+      return;
+    }
+    const b=document.getElementById('miss-copy');
+    if(b)b.onclick=()=>{
+      const txt=`${rmName(slug)} — missing work (${today()}):\n`+
+        S._missing.props.map(p=>`• ${p.name} — ${p.desc}`).join('\n');
+      const done=()=>toast('Copied — paste it to Anne');
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>done());
+      else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();done();}
+    };
   }
 
   // ---------- MY CLIENTS (RM's own book — view + edit activity) ----------
@@ -2042,8 +2123,34 @@ async function resolveOrg(){
           desc:`Restore Active Client — ${bits.join(' · ')} (from payroll ${month})`,act:'mkclient',w:{row}});
       });
     }catch(e){info.push('Could not read the payroll snapshots, so Active Clients could not be checked: '+e.message);}
+    // Second source for the book: won deals. A payroll month only knows the clients that
+    // existed when it was first opened, so anyone won since then appears in no snapshot at
+    // all — which is exactly why Elizabeth's recent wins produced nothing to restore. The
+    // won deal itself still carries the client and the premium, so use it as the fallback.
+    const proposed={};props.forEach(p=>{if(p.act==='mkclient')proposed[p.slug+'|'+_bookKey(p.name)]=1;});
+    RMS.forEach(r=>_wonDeals(r.slug).forEach(d=>{
+      const nm=d.prospectName;if(!nm)return;
+      const key=r.slug+'|'+_bookKey(nm);
+      if(proposed[key])return;                                   // payroll already covers it
+      if(_findByName(S.portfolio[r.slug],nm))return;              // already on the book
+      const jw=want[key];if(jw&&jw.deleted)return;                // deliberately deleted — leave it
+      proposed[key]=1;
+      props.push({slug:r.slug,name:nm,label:`${rmName(r.slug)} · ${nm}`,sel:true,
+        desc:`Restore Active Client — ${zar(+d.premium||0)}/m (from the won deal; no payroll snapshot holds this client)`,
+        act:'mkclient',w:{row:{client:nm,premium:+d.premium||0,commRate:6.25,brokerFee:0,policy:'',insurer:''}}});
+    }));
     props.sort((a,b)=>a.label.localeCompare(b.label));
-    return {props,info,logCount:log.length,payrollMonths};
+    // Per-RM tally so a blank result can be explained rather than just looking empty.
+    const perRM={};props.forEach(p=>{const t=perRM[p.slug]||(perRM[p.slug]={deals:0,clients:0});
+      if(p.act==='mkclient')t.clients++;else t.deals++;});
+    return {props,info,logCount:log.length,payrollMonths,perRM};
+  }
+  // The same analysis, narrowed to one RM — for the read-only view on their own screen.
+  async function recoveryForRM(slug){
+    const r=await recoveryAnalyse();
+    return {props:r.props.filter(p=>p.slug===slug),
+      info:r.info.filter(t=>t.startsWith(rmName(slug)+' ')||t.indexOf('payroll snapshots')>-1),
+      logCount:r.logCount,payrollMonths:r.payrollMonths};
   }
   function _recApply(p){
     const w=p.w,now=nowISO();
