@@ -421,6 +421,7 @@ async function resolveOrg(){
     if(k==='deals:__house') return {kind:'deals', slug:'__house'};
     if(k.startsWith('deals:')) return {kind:'deals', slug:k.slice(6)};
     if(k.startsWith('portfolio:')) return {kind:'portfolio', slug:k.slice(10)};
+    if(k==='payrolls:') return {kind:'payrolls'};                    // every month, for Active Clients recovery
     if(k.startsWith('payroll:')) return {kind:'payroll', month:k.slice(8)};
     if(k==='config:pins') return {kind:'pins'};
     if(k==='config:meta') return {kind:'meta'};
@@ -476,6 +477,14 @@ async function resolveOrg(){
       if(error)throw error;
       _known['portfolio:'+route.slug]=new Set((data||[]).map(r=>r.id));
       return (data||[]).map(_portRowToApp);
+    }
+    if(route.kind==='payrolls'){
+      // Every payroll month, oldest first. Each month is seeded from the RMs' books, so
+      // these rows double as dated snapshots of Active Clients — the only surviving record
+      // of the book when the portfolio table itself has been overwritten.
+      const {data,error}=await sb.from('payroll').select('month,rows').eq('org_id',org).order('month');
+      if(error)throw error;
+      return (data||[]).map(r=>({month:r.month, rows:r.rows||[]}));
     }
     if(route.kind==='payroll'){
       const {data,error}=await sb.from('payroll').select('*').eq('org_id',org).eq('month',route.month).maybeSingle();
@@ -1105,7 +1114,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.06c';
+  const APP_VERSION='v2026.08.06d';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -2005,13 +2014,48 @@ async function resolveOrg(){
       if(w.health&&deal.health!==w.health)props.push({slug:w.slug,name:w.name,label,sel:true,desc:`Health ${HEALTH[deal.health]||deal.health} → ${HEALTH[w.health]}`,act:'health',w});
       if(w.archived!=null&&!!deal.archived!==w.archived)props.push({slug:w.slug,name:w.name,label,sel:true,desc:w.archived?'Archive (was archived, came back)':'Un-archive (was restored, still archived)',act:'arch',w});
       if(w.editedAt&&deal.updatedAt&&_ts(deal.updatedAt)<_ts(w.editedAt))info.push(`${label} — details were edited on ${w.editedAt.slice(0,10)} but the deal looks older; ask ${rmName(w.slug)} to glance over the fields`);
-      if(w.won&&!w.deleted&&w.slug!=='__house'&&!_findByName(S.portfolio[w.slug],w.name))info.push(`${label} — was added to the book from a won comparison but is missing from Active Clients; re-import or add manually`);
     }
+    // ---- Active Clients ----------------------------------------------------------
+    // The journal records deals, not the book, so everything above can only *report* a
+    // missing Active Client. Payroll is the record that fills the gap: every month is
+    // seeded from each RM's book, so an already-opened month carries a dated snapshot of
+    // Active Clients — name, premium, rate, broker fee, policy and insurer. Take the most
+    // recent month that mentions each client, so restored figures are the freshest we hold.
+    let payrollMonths=0;
+    try{
+      const months=(await sGet('payrolls:'))||[];
+      payrollMonths=months.length;
+      const latest={};
+      months.slice().sort((a,b)=>String(a.month||'').localeCompare(String(b.month||'')))
+        .forEach(m=>(m.rows||[]).forEach(row=>{
+          if(!row||!row.rm||!row.client)return;
+          latest[row.rm+'|'+_bookKey(row.client)]={row,month:m.month};   // later month overwrites
+        }));
+      Object.keys(latest).forEach(k=>{
+        const {row,month}=latest[k];
+        if(!RMS.some(r=>r.slug===row.rm))return;
+        if(_findByName(S.portfolio[row.rm],row.client))return;           // already on the book
+        const bits=[zar(+row.premium||0)+'/m',(row.commRate!=null?row.commRate:6.25)+'%'];
+        if(+row.brokerFee)bits.push('fee '+zar(+row.brokerFee));
+        if(row.insurer)bits.push(row.insurer);
+        props.push({slug:row.rm,name:row.client,label:`${rmName(row.rm)} · ${row.client}`,sel:true,
+          desc:`Restore Active Client — ${bits.join(' · ')} (from payroll ${month})`,act:'mkclient',w:{row}});
+      });
+    }catch(e){info.push('Could not read the payroll snapshots, so Active Clients could not be checked: '+e.message);}
     props.sort((a,b)=>a.label.localeCompare(b.label));
-    return {props,info,logCount:log.length};
+    return {props,info,logCount:log.length,payrollMonths};
   }
   function _recApply(p){
     const w=p.w,now=nowISO();
+    if(p.act==='mkclient'){
+      const r=w.row;
+      const book=S.portfolio[p.slug]||(S.portfolio[p.slug]=[]);
+      if(_findByName(book,r.client))return {};                   // restored twice — leave it alone
+      book.push({id:uid(),client:r.client,rm:p.slug,premium:+r.premium||0,
+        commRate:(r.commRate!=null)?+r.commRate:6.25,brokerFee:+r.brokerFee||0,
+        policy:r.policy||'',insurer:r.insurer||'',archived:false});
+      return {port:true};
+    }
     const list=S.deals[p.slug]||(S.deals[p.slug]=[]);
     const deal=_findByName(list,p.name);
     if(p.act==='relose'||p.act==='mklost'){
@@ -2041,7 +2085,7 @@ async function resolveOrg(){
     if(!r)return `<div class="wrap wrap-wide"><div class="note">Scanning the change journal and comparing it with the live data…</div></div>`;
     const groups={};r.props.forEach((p,i)=>{p._i=i;(groups[rmName(p.slug)]=groups[rmName(p.slug)]||[]).push(p);});
     return `<div class="wrap wrap-wide">
-      <div class="note">Every action the team logs is journalled separately from the deal data — and the journal survived the sync problem. Below is every journalled change the live data no longer shows. Tick what should be restored (everything is pre-ticked), untick anything you know was undone on purpose, then apply. Nothing is written until you press the button.</div>
+      <div class="note">Two records survived the sync problem and both are read here. The <b>change journal</b> is written separately from the deal data, so it can rebuild pipeline leads. <b>Payroll months</b> are seeded from each RM's book, so they hold dated snapshots of <b>Active Clients</b> — that is how won clients come back, with their premium, rate, broker fee, policy and insurer. Below is everything those two records show that the live data no longer does. Tick what should be restored (everything is pre-ticked), untick anything you know was removed on purpose, then apply. Nothing is written until you press the button.</div>
       <div class="sec-title">\u{1F527} Changes to restore (${r.props.length})</div>
       <div class="card">${r.props.length===0?'<div class="empty" style="padding:16px;">Nothing to restore — the live data already reflects every journalled change. No double work needed.</div>':Object.keys(groups).map(g=>`
         <div style="padding:10px 14px 2px;font-family:'Saira';font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;">${esc(g)}</div>
@@ -2052,7 +2096,7 @@ async function resolveOrg(){
       ${r.props.length?`<button class="btn btn-primary" id="rec-apply" style="margin:14px 0 6px;width:100%;">Restore ${r.props.filter(p=>p.sel).length} selected change(s)</button>`:''}
       ${r.info.length?`<div class="sec-title" style="margin-top:18px;">\u{1F440} Needs a human eye (${r.info.length})</div>
       <div class="card">${r.info.map(t=>`<div class="change-item"><div style="flex:1;" class="change-txt">${esc(t)}</div></div>`).join('')}</div>`:''}
-      <div class="change-time" style="margin-top:10px;">Journal entries scanned: ${r.logCount}</div>
+      <div class="change-time" style="margin-top:10px;">Journal entries scanned: ${r.logCount} &middot; payroll snapshots read: ${r.payrollMonths||0}</div>
     </div>`;
   }
   function wireCmdRecovery(){
@@ -2063,10 +2107,11 @@ async function resolveOrg(){
       const sel=S._recovery.props.filter(p=>p.sel);
       if(!sel.length)return;
       btn.disabled=true;btn.textContent='Restoring…';
-      const touched={deals:new Set(),lost:new Set()};
-      sel.forEach(p=>{const t=_recApply(p);if(t.deals)touched.deals.add(p.slug);if(t.lost)touched.lost.add(p.slug);});
+      const touched={deals:new Set(),lost:new Set(),port:new Set()};
+      sel.forEach(p=>{const t=_recApply(p);if(t.deals)touched.deals.add(p.slug);if(t.lost)touched.lost.add(p.slug);if(t.port)touched.port.add(p.slug);});
       for(const slug of touched.deals)await saveRM(slug);
       for(const slug of touched.lost)await saveLost(slug);
+      for(const slug of touched.port)await savePortfolio(slug);
       const bySlug={};sel.forEach(p=>{bySlug[p.slug]=(bySlug[p.slug]||0)+1;});
       Object.keys(bySlug).forEach(slug=>logChange(slug,`Sync recovery restored ${bySlug[slug]} change(s)`,'update'));
       S._recovery=null;render();toast(`${sel.length} change(s) restored`);
