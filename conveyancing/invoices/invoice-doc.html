@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tax Invoice — H Annandale Attorneys Inc.</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:#17263A; --gold:#B58C4B; --gold-soft:#D9BC8C; --ink:#1B2B40;
+    --soft:#55647A; --faint:#93A0B2; --line:#E3DDD2; --paper:#FAF8F4; --red:#A33328;
+  }
+  body { font-family:'IBM Plex Sans',Arial,sans-serif; color:var(--ink); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .pg { width:210mm; min-height:296.5mm; padding:10mm 15mm 6mm; position:relative; page-break-after:always; display:flex; flex-direction:column; }
+  .pg:last-child { page-break-after:auto; }
+  .serif { font-family:'Cormorant Garamond',Georgia,serif; }
+
+  /* header */
+  .hd { display:flex; justify-content:space-between; align-items:flex-start; }
+  .hd .mark { width:13mm; margin-bottom:2mm; }
+  .firm { font-family:'Cormorant Garamond',Georgia,serif; font-size:16pt; font-weight:600; letter-spacing:.26em; color:var(--navy); line-height:1.1; }
+  .firm-sub { font-size:6.6pt; letter-spacing:.36em; color:var(--gold); text-transform:uppercase; margin-top:1.3mm; }
+  .addr { font-size:8pt; color:var(--soft); line-height:1.6; margin-top:3mm; }
+  .hd-r { text-align:right; min-width:74mm; }
+  .doc-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:27pt; font-weight:600; letter-spacing:.10em; color:var(--navy); line-height:1; }
+  .doc-rule { height:.6mm; background:var(--gold); margin:2.4mm 0 2.8mm; }
+  .meta { display:grid; grid-template-columns:auto auto; gap:1.1mm 6mm; justify-content:end; }
+  .meta .k { font-size:6.8pt; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); text-align:right; padding-top:.5mm; }
+  .meta .v { font-size:9pt; font-weight:600; color:var(--ink); text-align:right; }
+  .fill { color:#9AA6B6; font-weight:500; font-style:italic; }
+
+  .band { height:.5mm; background:var(--gold); margin:4.5mm 0 0; }
+
+  /* parties */
+  .parties { display:flex; gap:6mm; margin-top:3.6mm; }
+  .party { flex:1; }
+  .party.box { background:var(--paper); border-radius:1.6mm; padding:3.6mm 4.4mm; }
+  .lb { font-size:6.8pt; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin-bottom:2.6mm; }
+  .pn { font-size:10.5pt; font-weight:700; color:var(--ink); margin-bottom:1.4mm; }
+  .pl { font-size:8.4pt; color:var(--soft); line-height:1.6; }
+  .kv { display:flex; gap:3mm; font-size:8.4pt; line-height:1.55; }
+  .kv .k { color:var(--faint); min-width:22mm; }
+  .kv .v { color:var(--ink); flex:1; }
+
+  /* items */
+  .sec { font-size:7pt; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--navy); margin:4mm 0 1.8mm; }
+  table.items { width:100%; border-collapse:collapse; }
+  table.items thead th { background:var(--navy); color:#fff; font-size:6.6pt; font-weight:700; letter-spacing:.18em; text-transform:uppercase; padding:2mm 3mm; text-align:left; }
+  table.items thead th.r { text-align:right; }
+  table.items tbody td { font-size:8.4pt; padding:1.1mm 3mm; border-bottom:.25mm solid var(--line); color:var(--ink); vertical-align:top; }
+  table.items tbody td.r { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  table.items tbody tr:last-child td { border-bottom:none; }
+  .item-note { font-size:7.6pt; color:var(--faint); margin-top:.6mm; }
+
+  /* totals */
+  .totals { margin-top:3.4mm; margin-left:auto; width:88mm; }
+  .tr { display:flex; justify-content:space-between; padding:1.5mm 3mm; font-size:8.6pt; color:var(--soft); }
+  .tr .v { color:var(--ink); font-variant-numeric:tabular-nums; }
+  .tr.sub { border-top:.3mm solid var(--line); }
+  .tr.grand { background:var(--navy); color:#fff; padding:2.8mm 3mm; border-radius:1.4mm; margin-top:1.2mm; }
+  .tr.grand .k { font-size:8.6pt; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+  .tr.grand .v { font-family:'Cormorant Garamond',Georgia,serif; font-size:15pt; font-weight:700; color:#fff; }
+
+  /* footer blocks */
+  .blocks { display:flex; gap:5mm; margin-top:3.4mm; }
+  .blk { flex:1; border-radius:1.6mm; padding:3.4mm 4.2mm; }
+  .blk.pay { background:var(--paper); }
+  .blk.warn { background:#FBF3F2; }
+  .bank { display:flex; gap:3mm; font-size:8.2pt; line-height:1.62; }
+  .bank .k { font-size:6.8pt; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); min-width:26mm; padding-top:.9mm; }
+  .bank .v { font-weight:700; color:var(--ink); }
+  .warn .wt { font-size:6.8pt; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--red); margin-bottom:2mm; }
+  .warn p { font-size:7.4pt; line-height:1.55; color:#6B4A45; }
+  .terms { margin-top:3mm; }
+  .terms ol { margin-left:4.2mm; }
+  .terms li { font-size:7.5pt; line-height:1.42; color:var(--soft); margin-bottom:.45mm; }
+  .ft { margin-top:auto; border-top:.25mm solid var(--line); padding-top:2.2mm; display:flex; justify-content:space-between; font-size:6.9pt; color:var(--faint); }
+  .ft b { color:var(--soft); font-weight:600; }
+  .note-pay { font-size:7.4pt; color:var(--soft); font-style:italic; margin-top:1.8mm; line-height:1.45; }
+</style>
+</head>
+<body>
+<div class="pg">
+
+  <div class="hd">
+    <div>
+      <svg class="mark" viewBox="0 0 100 92" fill="none" stroke="#B58C4B" stroke-width="3.4">
+        <path d="M14 46 L50 14 L86 46" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M68 20 L68 8 L80 8 L80 31" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 44 L24 88 M76 44 L76 88" stroke-linecap="round"/>
+        <g stroke="none" fill="#B58C4B"><rect x="33" y="62" width="8" height="8" rx="1"/><rect x="46" y="62" width="8" height="8" rx="1"/><rect x="59" y="62" width="8" height="8" rx="1"/></g>
+      </svg>
+      <div class="firm">H&nbsp;ANNANDALE</div>
+      <div class="firm-sub">Attorneys Inc.</div>
+      <div class="addr">
+        59 Bolo Street, Moreleta Park<br>
+        Pretoria, 0181<br>
+        maryke@haattorneys.co.za<br>
+        083 619 2313
+      </div>
+    </div>
+    <div class="hd-r">
+      <div class="doc-t">TAX INVOICE</div>
+      <div class="doc-rule"></div>
+      <div class="meta">
+        <div class="k">Invoice no.</div><div class="v fill">[INV-2026-001]</div>
+        <div class="k">Date</div><div class="v fill">[DD Month 2026]</div>
+        <div class="k">Your reference</div><div class="v fill">[Client ref]</div>
+        <div class="k">Prepared by</div><div class="v">Maryke Dique</div>
+        <div class="k">VAT reg. no.</div><div class="v fill">[if registered]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="band"></div>
+
+  <div class="parties">
+    <div class="party">
+      <div class="lb">Invoice to</div>
+      <div class="pn fill">[Client / firm name]</div>
+      <div class="pl fill">
+        [Address line 1]<br>
+        [Address line 2]<br>
+        [Email address]<br>
+        [Company / VAT reg. no.]
+      </div>
+    </div>
+    <div class="party box">
+      <div class="lb">The engagement</div>
+      <div class="kv"><div class="k">Service</div><div class="v">Assisting in new firm setup</div></div>
+      <div class="kv"><div class="k">Scope</div><div class="v">Practice registrations, clearance portals, systems and office establishment</div></div>
+      <div class="kv"><div class="k">Period</div><div class="v fill">[Month – Month 2026]</div></div>
+      <div class="kv"><div class="k">Status</div><div class="v">Completed</div></div>
+    </div>
+  </div>
+
+  <div class="sec">Services rendered</div>
+  <table class="items">
+    <thead>
+      <tr><th>Description</th><th class="r" style="width:32mm;">Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Consulting fee in respect of firm requirements</td><td class="r">R 2 017.40</td></tr>
+      <tr><td>E4 registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>Lexpro registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>SearchWorks registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>e-Tshwane clearance portal setup</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Ekurhuleni clearance portal setup</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Email set-up</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Letterhead and logo design</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Email signature design</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Correspondent research and lodgement arrangements</td><td class="r">R 2 500.00</td></tr>
+      <tr><td>Office setup and purchasing of office supplies</td><td class="r">R 5 000.00</td></tr>
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="tr sub"><div class="k">Subtotal</div><div class="v">R 28 517.40</div></div>
+    <div class="tr grand"><div class="k">Total due</div><div class="v">R 28 517.40</div></div>
+  </div>
+
+  <div class="blocks">
+    <div class="blk pay">
+      <div class="lb">Payment details</div>
+      <div class="bank"><div class="k">Account holder</div><div class="v">Maryke Dique</div></div>
+      <div class="bank"><div class="k">Bank</div><div class="v">ABSA</div></div>
+      <div class="bank"><div class="k">Account number</div><div class="v">9153076436</div></div>
+      <div class="bank"><div class="k">Branch code</div><div class="v">632005</div></div>
+      <div class="bank"><div class="k">Reference</div><div class="v fill">[Invoice no.]</div></div>
+      <div class="note-pay">Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.</div>
+    </div>
+    <div class="blk warn">
+      <div class="wt">⚠ Important — banking details &amp; fraud warning</div>
+      <p>These banking details do not change. We will never email you new or amended account details. Before making any payment, please telephone this office on 083&nbsp;619&nbsp;2313 — using a number you have independently verified — and confirm the account details verbally. No liability can be accepted for funds paid into an account other than the one confirmed by us in person or telephonically.</p>
+    </div>
+  </div>
+
+  <div class="terms">
+    <div class="lb">Terms</div>
+    <ol>
+      <li>This invoice is payable on presentation unless otherwise agreed in writing.</li>
+      <li>Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.</li>
+      <li>Any query on this account must be raised within 30 days of the date of invoice.</li>
+      <li>Ownership of any design work supplied passes to the client on receipt of payment in full.</li>
+    </ol>
+  </div>
+
+  <div class="ft">
+    <div><b>H Annandale Attorneys Inc.</b> &nbsp;·&nbsp; Reg. no. <span class="fill">[Company reg. no.]</span> &nbsp;·&nbsp; 59 Bolo Street, Moreleta Park, Pretoria</div>
+    <div>E &amp; OE</div>
+  </div>
+
+</div>
+</body>
+</html>

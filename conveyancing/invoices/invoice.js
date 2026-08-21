@@ -1,0 +1,214 @@
+const fs = require('fs');
+const {
+  Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell,
+  WidthType, BorderStyle, ShadingType, AlignmentType, VerticalAlign,
+} = require('docx');
+
+// node invoice.js setup   -> the firm-setup invoice, filled in
+// node invoice.js blank   -> an empty template to reuse for any job
+const FILLED = process.argv[2] !== 'blank';
+
+const NAVY = '17263A', GOLD = 'B58C4B', INK = '1B2B40', SOFT = '55647A',
+      FAINT = '93A0B2', LINE = 'E3DDD2', PAPER = 'FAF8F4', WARN = 'FBF3F2', RED = 'A33328';
+const SERIF = 'Times New Roman', SANS = 'Arial';
+const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+const NOB = { top: NONE, bottom: NONE, left: NONE, right: NONE };
+const HAIR = { top: NONE, bottom: { style: BorderStyle.SINGLE, size: 3, color: LINE }, left: NONE, right: NONE };
+
+const t = (text, o = {}) => new TextRun({
+  text, font: o.font || SANS, size: o.size || 18, bold: o.bold, italics: o.italics,
+  color: o.color || INK, characterSpacing: o.spacing, allCaps: o.caps,
+});
+const p = (runs, o = {}) => new Paragraph({
+  children: Array.isArray(runs) ? runs : [runs],
+  alignment: o.align,
+  spacing: { before: o.before || 0, after: o.after === undefined ? 60 : o.after, line: o.line || 240 },
+  border: o.border, numbering: o.numbering,
+});
+const gap = (h) => new Paragraph({ children: [], spacing: { after: h } });
+const lb = (s) => p(t(s, { size: 13, bold: true, color: GOLD, spacing: 55, caps: true }), { after: 80 });
+const cell = (children, o = {}) => new TableCell({
+  children, width: { size: o.w, type: WidthType.DXA },
+  borders: o.borders || NOB,
+  shading: o.fill ? { type: ShadingType.CLEAR, fill: o.fill, color: 'auto' } : undefined,
+  margins: o.m || { top: 60, bottom: 60, left: 0, right: 0 },
+  verticalAlign: o.valign, columnSpan: o.span,
+});
+const tbl = (rows, widths) => new Table({
+  rows, columnWidths: widths,
+  width: { size: widths.reduce((a, b) => a + b, 0), type: WidthType.DXA }, borders: NOB,
+});
+const money = (n) => 'R ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+// placeholder styling: grey italic so it's obvious what still needs typing over
+const fill = (s, o = {}) => t(s, Object.assign({ color: '9AA6B6', italics: true }, o));
+const F = (ph, val, o = {}) => (FILLED && val ? t(val, o) : fill('[' + ph + ']', o));
+
+// ---------------------------------------------------------------- data
+const ITEMS = FILLED ? [
+  ['Consulting fee in respect of firm requirements', 2017.40],
+  ['E4 registration', 3000],
+  ['Lexpro registration', 3000],
+  ['SearchWorks registration', 3000],
+  ['e-Tshwane clearance portal setup', 2000],
+  ['Ekurhuleni clearance portal setup', 2000],
+  ['Email set-up', 2000],
+  ['Letterhead and logo design', 2000],
+  ['Email signature design', 2000],
+  ['Correspondent research and lodgement arrangements', 2500],
+  ['Office setup and purchasing of office supplies', 5000],
+] : Array.from({ length: 12 }, () => ['[Description of service]', null]);
+const subtotal = ITEMS.reduce((s, r) => s + (r[1] || 0), 0);
+
+// ---------------------------------------------------------------- header
+const headerLeft = [
+  new Paragraph({
+    children: [new ImageRun({ type: 'png', data: fs.readFileSync('logo.png'), transformation: { width: 40, height: 37 } })],
+    spacing: { after: 60 },
+  }),
+  p(t('H ANNANDALE', { font: SERIF, size: 26, bold: true, color: NAVY, spacing: 80 }), { after: 20 }),
+  p(t('ATTORNEYS INC.', { size: 11, color: GOLD, spacing: 80 }), { after: 150 }),
+  p(t('59 Bolo Street, Moreleta Park', { size: 15, color: SOFT }), { after: 10 }),
+  p(t('Pretoria, 0181', { size: 15, color: SOFT }), { after: 10 }),
+  p(t('maryke@haattorneys.co.za', { size: 15, color: SOFT }), { after: 10 }),
+  p(t('083 619 2313', { size: 15, color: SOFT }), { after: 0 }),
+];
+const metaRow = (k, v) => new TableRow({ children: [
+  cell([p(t(k, { size: 13, color: FAINT, caps: true, spacing: 25 }), { align: AlignmentType.RIGHT, after: 0 })],
+    { w: 1700, m: { top: 25, bottom: 25, left: 0, right: 150 } }),
+  cell([p(v, { align: AlignmentType.RIGHT, after: 0 })],
+    { w: 2400, m: { top: 25, bottom: 25, left: 0, right: 0 } }),
+]});
+const headerRight = [
+  p(t('TAX INVOICE', { font: SERIF, size: 38, bold: true, color: NAVY, spacing: 40 }), { align: AlignmentType.RIGHT, after: 50 }),
+  new Paragraph({ children: [], spacing: { after: 150 }, border: { bottom: { style: BorderStyle.SINGLE, size: 10, color: GOLD } } }),
+  tbl([
+    metaRow('Invoice no.', F('INV-2026-001', null, { size: 17, bold: true })),
+    metaRow('Date', F('DD Month 2026', null, { size: 17, bold: true })),
+    metaRow('Your reference', F('Client ref', null, { size: 17, bold: true })),
+    metaRow('Prepared by', t('Maryke Dique', { size: 17, bold: true })),
+    metaRow('VAT reg. no.', F('if registered', null, { size: 17, bold: true })),
+  ], [1700, 2400]),
+];
+
+// ---------------------------------------------------------------- parties
+const kv = (k, v) => tbl([new TableRow({ children: [
+  cell([p(t(k, { size: 16, color: FAINT }), { after: 0 })], { w: 1300, m: { top: 40, bottom: 40, left: 0, right: 120 } }),
+  cell([p(v, { after: 0 })], { w: 3202, m: { top: 40, bottom: 40, left: 0, right: 0 } }),
+] })], [1300, 3202]);
+
+const billTo = [
+  lb('Invoice to'),
+  p(F('Client / firm name', null, { size: 20, bold: true }), { after: 90 }),
+  p(F('Address line 1', null, { size: 17 }), { after: 40 }),
+  p(F('Address line 2', null, { size: 17 }), { after: 40 }),
+  p(F('Email address', null, { size: 17 }), { after: 40 }),
+  p(F('Company / VAT reg. no.', null, { size: 17 }), { after: 0 }),
+];
+const engagement = [
+  lb('The engagement'),
+  kv('Service', FILLED ? t('Assisting in new firm setup', { size: 17 }) : fill('[Service]', { size: 17 })),
+  kv('Scope', FILLED ? t('Practice registrations, clearance portals, systems and office establishment', { size: 17 })
+                     : fill('[Scope of work]', { size: 17 })),
+  kv('Period', F('Month – Month 2026', null, { size: 17 })),
+  kv('Status', FILLED ? t('Completed', { size: 17 }) : fill('[Status]', { size: 17 })),
+];
+
+// ---------------------------------------------------------------- items
+const C = [7704, 2500];
+const itemsHead = new TableRow({ children: [
+  cell([p(t('Description', { size: 13, bold: true, color: 'FFFFFF', spacing: 50, caps: true }), { after: 0 })],
+    { w: C[0], fill: NAVY, m: { top: 90, bottom: 90, left: 150, right: 60 } }),
+  cell([p(t('Amount', { size: 13, bold: true, color: 'FFFFFF', spacing: 50, caps: true }), { align: AlignmentType.RIGHT, after: 0 })],
+    { w: C[1], fill: NAVY, m: { top: 90, bottom: 90, left: 0, right: 150 } }),
+]});
+const itemRow = ([desc, val]) => new TableRow({ children: [
+  cell([p(val === null ? fill(desc, { size: 17 }) : t(desc, { size: 17 }), { after: 0 })],
+    { w: C[0], borders: HAIR, m: { top: 75, bottom: 75, left: 150, right: 120 } }),
+  cell([p(val === null ? fill('R', { size: 17 }) : t(money(val), { size: 17 }), { align: AlignmentType.RIGHT, after: 0 })],
+    { w: C[1], borders: HAIR, m: { top: 75, bottom: 75, left: 0, right: 150 } }),
+]});
+
+// ---------------------------------------------------------------- totals
+const T = [7204, 3000];
+const totalRow = (k, v, o = {}) => new TableRow({ children: [
+  cell([p(t(k, { size: o.big ? 18 : 17, bold: o.bold, color: o.color || SOFT, caps: o.big, spacing: o.big ? 45 : 0 }), { align: AlignmentType.RIGHT, after: 0 })],
+    { w: T[0], fill: o.fill, borders: o.borders, m: { top: o.pad || 70, bottom: o.pad || 70, left: 0, right: 220 } }),
+  cell([p(v === null ? fill('R', { size: 17 }) : t(money(v), { font: o.big ? SERIF : SANS, size: o.big ? 26 : 17, bold: o.bold, color: o.color || INK }), { align: AlignmentType.RIGHT, after: 0 })],
+    { w: T[1], fill: o.fill, borders: o.borders, m: { top: o.pad || 70, bottom: o.pad || 70, left: 0, right: 150 } }),
+]});
+
+// ---------------------------------------------------------------- blocks
+const bank = (k, v) => p([
+  t(k, { size: 13, color: FAINT, caps: true, spacing: 25 }),
+  new TextRun({ text: '   ', font: SANS, size: 17 }),
+  v,
+], { after: 70 });
+
+const payBlock = [
+  lb('Payment details'),
+  bank('Account holder', t('Maryke Dique', { size: 17, bold: true })),
+  bank('Bank', t('ABSA', { size: 17, bold: true })),
+  bank('Account number', t('9153076436', { size: 17, bold: true })),
+  bank('Branch code', t('632005', { size: 17, bold: true })),
+  bank('Reference', F('Invoice no.', null, { size: 17, bold: true })),
+  p(t('Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.', { size: 14, italics: true, color: SOFT }), { after: 0 }),
+];
+const warnBlock = [
+  p(t('IMPORTANT — BANKING DETAILS & FRAUD WARNING', { size: 13, bold: true, color: RED, spacing: 35 }), { after: 80 }),
+  p(t('These banking details do not change. We will never email you new or amended account details. Before making any payment, please telephone this office on 083 619 2313 — using a number you have independently verified — and confirm the account details verbally. No liability can be accepted for funds paid into an account other than the one confirmed by us in person or telephonically.', { size: 14, color: '6B4A45' }), { after: 0 }),
+];
+const term = (n, s) => p(t(n + '.  ' + s, { size: 14, color: SOFT }), { after: 45 });
+
+// ---------------------------------------------------------------- document
+const doc = new Document({
+  creator: 'H Annandale Attorneys Inc.',
+  title: FILLED ? 'Tax Invoice — new firm setup' : 'Tax Invoice — template',
+  description: 'Tax invoice',
+  styles: { default: { document: { run: { font: SANS, size: 18, color: INK } } } },
+  sections: [{
+    properties: { page: { margin: { top: 680, right: 851, bottom: 567, left: 851 } } },
+    children: [
+      tbl([new TableRow({ children: [
+        cell(headerLeft, { w: 6104, valign: VerticalAlign.TOP }),
+        cell(headerRight, { w: 4100, valign: VerticalAlign.TOP }),
+      ] })], [6104, 4100]),
+      gap(180),
+      new Paragraph({ children: [], spacing: { after: 220 }, border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: GOLD } } }),
+      tbl([new TableRow({ children: [
+        cell(billTo, { w: 4702, valign: VerticalAlign.TOP }),
+        cell([], { w: 300 }),
+        cell(engagement, { w: 5202, valign: VerticalAlign.TOP, fill: PAPER, m: { top: 170, bottom: 170, left: 220, right: 200 } }),
+      ] })], [4702, 300, 5202]),
+      p(t('Services rendered', { size: 14, bold: true, color: NAVY, spacing: 55, caps: true }), { before: 300, after: 110 }),
+      tbl([itemsHead, ...ITEMS.map(itemRow)], C),
+      gap(200),
+      tbl([
+        totalRow('Subtotal', FILLED ? subtotal : null, { borders: { top: { style: BorderStyle.SINGLE, size: 3, color: LINE }, bottom: NONE, left: NONE, right: NONE } }),
+        totalRow('Total due', FILLED ? subtotal : null, { bold: true, big: true, color: 'FFFFFF', fill: NAVY, pad: 140 }),
+      ], T),
+      gap(260),
+      tbl([new TableRow({ children: [
+        cell(payBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
+        cell([], { w: 300 }),
+        cell(warnBlock, { w: 4952, fill: WARN, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
+      ] })], [4952, 300, 4952]),
+      gap(240),
+      lb('Terms'),
+      term(1, 'This invoice is payable on presentation unless otherwise agreed in writing.'),
+      term(2, 'Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.'),
+      term(3, 'Any query on this account must be raised within 30 days of the date of invoice.'),
+      term(4, 'Ownership of any design work supplied passes to the client on receipt of payment in full.'),
+      gap(160),
+      new Paragraph({ children: [], spacing: { after: 90 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE } } }),
+      p([
+        t('H Annandale Attorneys Inc.', { size: 13, bold: true, color: SOFT }),
+        t('   ·   Reg. no. ', { size: 13, color: FAINT }),
+        fill('[Company reg. no.]', { size: 13 }),
+        t('   ·   59 Bolo Street, Moreleta Park, Pretoria   ·   E & OE', { size: 13, color: FAINT }),
+      ], { after: 0 }),
+    ],
+  }],
+});
+
+const out = FILLED ? 'Maryke-Invoice-Firm-Setup.docx' : 'HAA-Invoice-TEMPLATE.docx';
+Packer.toBuffer(doc).then((b) => { fs.writeFileSync(out, b); console.log('wrote', out, b.length, 'bytes'); });
