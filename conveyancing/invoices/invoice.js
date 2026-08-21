@@ -61,8 +61,7 @@ const subtotal = ITEMS.reduce((s, r) => s + (r[1] || 0), 0);
 
 // ---------------------------------------------------------------- header
 const headerLeft = [
-  p(t('H ANNANDALE', { font: SERIF, size: 26, bold: true, color: NAVY, spacing: 80 }), { after: 20 }),
-  p(t('ATTORNEYS INC.', { size: 11, color: GOLD, spacing: 80 }), { after: 150 }),
+  p(t('MARYKE DIQUE', { font: SERIF, size: 26, bold: true, color: NAVY, spacing: 80 }), { after: 150 }),
   p(t('673B Skukuza Street, Faerie Glen', { size: 15, color: SOFT }), { after: 10 }),
   p(t('Pretoria, 0081', { size: 15, color: SOFT }), { after: 10 }),
   p(t('maryke@haattorneys.co.za', { size: 15, color: SOFT }), { after: 10 }),
@@ -93,11 +92,11 @@ const kv = (k, v) => tbl([new TableRow({ children: [
 
 const billTo = [
   lb('Invoice to'),
-  p(F('Client / firm name', null, { size: 20, bold: true }), { after: 90 }),
-  p(F('Address line 1', null, { size: 17 }), { after: 40 }),
-  p(F('Address line 2', null, { size: 17 }), { after: 40 }),
-  p(F('Email address', null, { size: 17 }), { after: 40 }),
-  p(F('Company / VAT reg. no.', null, { size: 17 }), { after: 0 }),
+  p(F('Client / firm name', 'H Annandale Attorneys Inc.', { size: 20, bold: true }), { after: 90 }),
+  p(F('Attention', 'Attention: Hesca Annandale', { size: 17 }), { after: 40 }),
+  p(F('Address line 1', '59 Bolo Street, Moreleta Park', { size: 17 }), { after: 40 }),
+  p(F('Address line 2', 'Pretoria, 0181', { size: 17 }), { after: 40 }),
+  p(F('Email address', 'hesca@haattorneys.co.za', { size: 17 }), { after: 0 }),
 ];
 const engagement = [
   lb('The engagement'),
@@ -148,14 +147,6 @@ const payBlock = [
   bank('Reference', F('Invoice no.', null, { size: 17, bold: true })),
   p(t('Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.', { size: 14, italics: true, color: SOFT }), { after: 0 }),
 ];
-const term = (n, s) => p(t(n + '.  ' + s, { size: 14, color: SOFT }), { after: 90 });
-const termsBlock = [
-  lb('Terms'),
-  term(1, 'This invoice is payable on presentation unless otherwise agreed in writing.'),
-  term(2, 'Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.'),
-  term(3, 'Any query on this account must be raised within 30 days of the date of invoice.'),
-  term(4, 'Ownership of any design work supplied passes to the client on receipt of payment in full.'),
-];
 
 // ---------------------------------------------------------------- document
 const doc = new Document({
@@ -187,16 +178,13 @@ const doc = new Document({
       gap(260),
       tbl([new TableRow({ children: [
         cell(payBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
-        cell([], { w: 300 }),
-        cell(termsBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
-      ] })], [4952, 300, 4952]),
+        cell([], { w: 5252 }),
+      ] })], [4952, 5252]),
       gap(260),
       new Paragraph({ children: [], spacing: { after: 90 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE } } }),
       p([
-        t('H Annandale Attorneys Inc.', { size: 13, bold: true, color: SOFT }),
-        t('   ·   Reg. no. ', { size: 13, color: FAINT }),
-        fill('[Company reg. no.]', { size: 13 }),
-        t('   ·   673B Skukuza Street, Faerie Glen, Pretoria   ·   E & OE', { size: 13, color: FAINT }),
+        t('Maryke Dique', { size: 13, bold: true, color: SOFT }),
+        t('   ·   673B Skukuza Street, Faerie Glen, Pretoria, 0081   ·   083 619 2313   ·   E & OE', { size: 13, color: FAINT }),
       ], { after: 0 }),
     ],
   }],

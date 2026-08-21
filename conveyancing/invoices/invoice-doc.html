@@ -63,15 +63,11 @@
 
   /* footer blocks */
   .blocks { display:flex; gap:5mm; margin-top:6mm; align-items:stretch; }
-  .blk { flex:1; border-radius:1.6mm; padding:4.4mm 5mm; }
+  .blk { flex:0 0 calc(50% - 2.5mm); border-radius:1.6mm; padding:4.4mm 5mm; }
   .blk.pay { background:var(--paper); }
-  .blk.terms { background:var(--paper); }
   .bank { display:flex; gap:3mm; font-size:8.4pt; line-height:1.8; }
   .bank .k { font-size:6.8pt; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); min-width:26mm; padding-top:.9mm; }
   .bank .v { font-weight:700; color:var(--ink); }
-  .terms ol { margin-top:.4mm; }
-  .terms ol { margin-left:4.2mm; }
-  .terms li { font-size:7.8pt; line-height:1.55; color:var(--soft); margin-bottom:1.1mm; }
   .ft { margin-top:auto; border-top:.25mm solid var(--line); padding-top:2.2mm; display:flex; justify-content:space-between; font-size:6.9pt; color:var(--faint); }
   .ft b { color:var(--soft); font-weight:600; }
   .note-pay { font-size:7.4pt; color:var(--soft); font-style:italic; margin-top:1.8mm; line-height:1.45; }
@@ -82,8 +78,7 @@
 
   <div class="hd">
     <div>
-      <div class="firm">H&nbsp;ANNANDALE</div>
-      <div class="firm-sub">Attorneys Inc.</div>
+      <div class="firm">MARYKE&nbsp;DIQUE</div>
       <div class="addr">
         673B Skukuza Street, Faerie Glen<br>
         Pretoria, 0081<br>
@@ -108,12 +103,12 @@
   <div class="parties">
     <div class="party">
       <div class="lb">Invoice to</div>
-      <div class="pn fill">[Client / firm name]</div>
-      <div class="pl fill">
-        [Address line 1]<br>
-        [Address line 2]<br>
-        [Email address]<br>
-        [Company / VAT reg. no.]
+      <div class="pn">H Annandale Attorneys Inc.</div>
+      <div class="pl">
+        Attention: Hesca Annandale<br>
+        59 Bolo Street, Moreleta Park<br>
+        Pretoria, 0181<br>
+        hesca@haattorneys.co.za
       </div>
     </div>
     <div class="party box">
@@ -160,20 +155,11 @@
       <div class="bank"><div class="k">Reference</div><div class="v fill">[Invoice no.]</div></div>
       <div class="note-pay">Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.</div>
     </div>
-    <div class="blk terms">
-      <div class="lb">Terms</div>
-      <ol>
-        <li>This invoice is payable on presentation unless otherwise agreed in writing.</li>
-        <li>Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.</li>
-        <li>Any query on this account must be raised within 30 days of the date of invoice.</li>
-        <li>Ownership of any design work supplied passes to the client on receipt of payment in full.</li>
-      </ol>
     </div>
-  </div>
 
 
   <div class="ft">
-    <div><b>H Annandale Attorneys Inc.</b> &nbsp;·&nbsp; Reg. no. <span class="fill">[Company reg. no.]</span> &nbsp;·&nbsp; 673B Skukuza Street, Faerie Glen, Pretoria</div>
+    <div><b>Maryke Dique</b> &nbsp;·&nbsp; 673B Skukuza Street, Faerie Glen, Pretoria, 0081 &nbsp;·&nbsp; 083 619 2313</div>
     <div>E &amp; OE</div>
   </div>
 
