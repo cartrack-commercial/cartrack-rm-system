@@ -6,7 +6,7 @@
 |---|---|
 | `Maryke-Invoice-Firm-Setup.pdf` | The new-firm-setup invoice, dated 21 August 2026. R 28 517.40. |
 | `Maryke-Invoice-Firm-Setup.docx` | The same invoice in Word — type over the `[grey italic]` placeholders. |
-| `HAA-Invoice-TEMPLATE.docx` | Blank version with 12 empty lines. Reuse for any job. |
+| `HAA-Invoice-TEMPLATE.docx` | Blank version with 10 empty lines. Reuse for any job. |
 | `invoice-doc.html` | Source of the PDF. Edit, then re-render (command below). |
 | `invoice.js` | Generator for both Word files. `node invoice.js setup` / `node invoice.js blank`. |
 
@@ -30,7 +30,14 @@ chrome --headless --no-pdf-header-footer --print-to-pdf=Maryke-Invoice-Firm-Setu
 
 # Word
 npm install docx && node invoice.js setup && node invoice.js blank
+
+# Check the Word layout (needs libreoffice-writer, NOT just libreoffice-core —
+# without it every conversion dies with "source file could not be loaded")
+apt-get install -y libreoffice-writer
+HOME=/tmp/lohome soffice --headless --convert-to pdf --outdir . Maryke-Invoice-Firm-Setup.docx
 ```
+
+Both Word files must come out as **one page**. Verified 21 Aug 2026.
 
 Keep the invoice to **one page** — `.pg` must stay at or under ~296.5mm of content.
 Measure it before shipping:

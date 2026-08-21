@@ -56,7 +56,7 @@ const ITEMS = FILLED ? [
   ['Email signature design', 2000],
   ['Correspondent research and lodgement arrangements', 2500],
   ['Office setup and purchasing of office supplies', 5000],
-] : Array.from({ length: 12 }, () => ['[Description of service]', null]);
+] : Array.from({ length: 10 }, () => ['[Description of service]', null]);
 const subtotal = ITEMS.reduce((s, r) => s + (r[1] || 0), 0);
 
 // ---------------------------------------------------------------- header
@@ -155,7 +155,7 @@ const doc = new Document({
   description: 'Tax invoice',
   styles: { default: { document: { run: { font: SANS, size: 18, color: INK } } } },
   sections: [{
-    properties: { page: { margin: { top: 680, right: 851, bottom: 567, left: 851 } } },
+    properties: { page: { margin: { top: 620, right: 851, bottom: 400, left: 851 } } },
     children: [
       tbl([new TableRow({ children: [
         cell(headerLeft, { w: 6104, valign: VerticalAlign.TOP }),
@@ -175,12 +175,12 @@ const doc = new Document({
         totalRow('Subtotal', FILLED ? subtotal : null, { borders: { top: { style: BorderStyle.SINGLE, size: 3, color: LINE }, bottom: NONE, left: NONE, right: NONE } }),
         totalRow('Total due', FILLED ? subtotal : null, { bold: true, big: true, color: 'FFFFFF', fill: NAVY, pad: 140 }),
       ], T),
-      gap(260),
+      gap(190),
       tbl([new TableRow({ children: [
         cell(payBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
         cell([], { w: 5252 }),
       ] })], [4952, 5252]),
-      gap(260),
+      gap(120),
       new Paragraph({ children: [], spacing: { after: 90 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE } } }),
       p([
         t('Maryke Dique', { size: 13, bold: true, color: SOFT }),
