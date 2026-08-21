@@ -4,17 +4,20 @@
 
 | File | What it is |
 |---|---|
-| `Maryke-Invoice-Firm-Setup.pdf` | The new-firm-setup invoice, ready to send once the blanks are filled. R 28 517.40. |
+| `Maryke-Invoice-Firm-Setup.pdf` | The new-firm-setup invoice, dated 21 August 2026. R 28 517.40. |
 | `Maryke-Invoice-Firm-Setup.docx` | The same invoice in Word — type over the `[grey italic]` placeholders. |
 | `HAA-Invoice-TEMPLATE.docx` | Blank version with 12 empty lines. Reuse for any job. |
 | `invoice-doc.html` | Source of the PDF. Edit, then re-render (command below). |
 | `invoice.js` | Generator for both Word files. `node invoice.js setup` / `node invoice.js blank`. |
 
-## Still to fill in (12 placeholders)
+No logo and no fraud-warning box — both were removed at Annè's request on 21 Aug 2026.
+The date is hard-coded in the filled invoice and stays a placeholder in the blank template.
 
-Invoice number · date · your client reference · VAT reg. no. (only if registered) ·
+## Still to fill in (11 placeholders)
+
+Invoice number · your client reference · VAT reg. no. (only if registered) ·
 client name, address, email and reg. no. · engagement period · payment reference ·
-company reg. no. in the footer.
+company reg. no. in the footer. (The date is already set.)
 
 ## Regenerating
 
@@ -43,6 +46,8 @@ sed 's|</body>|<script>onload=()=>document.title=(document.querySelector(".pg").
    (ABSA 9153076436) is in Maryke Dique's personal name. If she is invoicing personally,
    swap the letterhead block for her own name and drop the company reg. no. line.
 3. **Branch code** 632005 is ABSA's universal branch code — worth a glance before sending.
+4. **Fraud warning.** The red banking-fraud box has been removed. Conveyancing payments are
+   a common interception target, so consider keeping a line about it in the covering email.
 
 Two wording fixes were made to the supplied list: *Ekhuruleni* → **Ekurhuleni**, and
 *Correspond research* → **Correspondent research**. Say the word if either was intended

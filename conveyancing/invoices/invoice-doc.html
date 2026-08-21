@@ -12,13 +12,12 @@
     --soft:#55647A; --faint:#93A0B2; --line:#E3DDD2; --paper:#FAF8F4; --red:#A33328;
   }
   body { font-family:'IBM Plex Sans',Arial,sans-serif; color:var(--ink); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .pg { width:210mm; min-height:296.5mm; padding:10mm 15mm 6mm; position:relative; page-break-after:always; display:flex; flex-direction:column; }
+  .pg { width:210mm; min-height:296.5mm; padding:11mm 15mm 7mm; position:relative; page-break-after:always; display:flex; flex-direction:column; }
   .pg:last-child { page-break-after:auto; }
   .serif { font-family:'Cormorant Garamond',Georgia,serif; }
 
   /* header */
   .hd { display:flex; justify-content:space-between; align-items:flex-start; }
-  .hd .mark { width:13mm; margin-bottom:2mm; }
   .firm { font-family:'Cormorant Garamond',Georgia,serif; font-size:16pt; font-weight:600; letter-spacing:.26em; color:var(--navy); line-height:1.1; }
   .firm-sub { font-size:6.6pt; letter-spacing:.36em; color:var(--gold); text-transform:uppercase; margin-top:1.3mm; }
   .addr { font-size:8pt; color:var(--soft); line-height:1.6; margin-top:3mm; }
@@ -48,7 +47,7 @@
   table.items { width:100%; border-collapse:collapse; }
   table.items thead th { background:var(--navy); color:#fff; font-size:6.6pt; font-weight:700; letter-spacing:.18em; text-transform:uppercase; padding:2mm 3mm; text-align:left; }
   table.items thead th.r { text-align:right; }
-  table.items tbody td { font-size:8.4pt; padding:1.1mm 3mm; border-bottom:.25mm solid var(--line); color:var(--ink); vertical-align:top; }
+  table.items tbody td { font-size:8.6pt; padding:1.75mm 3mm; border-bottom:.25mm solid var(--line); color:var(--ink); vertical-align:top; }
   table.items tbody td.r { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
   table.items tbody tr:last-child td { border-bottom:none; }
   .item-note { font-size:7.6pt; color:var(--faint); margin-top:.6mm; }
@@ -63,18 +62,16 @@
   .tr.grand .v { font-family:'Cormorant Garamond',Georgia,serif; font-size:15pt; font-weight:700; color:#fff; }
 
   /* footer blocks */
-  .blocks { display:flex; gap:5mm; margin-top:3.4mm; }
-  .blk { flex:1; border-radius:1.6mm; padding:3.4mm 4.2mm; }
+  .blocks { display:flex; gap:5mm; margin-top:6mm; align-items:stretch; }
+  .blk { flex:1; border-radius:1.6mm; padding:4.4mm 5mm; }
   .blk.pay { background:var(--paper); }
-  .blk.warn { background:#FBF3F2; }
-  .bank { display:flex; gap:3mm; font-size:8.2pt; line-height:1.62; }
+  .blk.terms { background:var(--paper); }
+  .bank { display:flex; gap:3mm; font-size:8.4pt; line-height:1.8; }
   .bank .k { font-size:6.8pt; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); min-width:26mm; padding-top:.9mm; }
   .bank .v { font-weight:700; color:var(--ink); }
-  .warn .wt { font-size:6.8pt; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--red); margin-bottom:2mm; }
-  .warn p { font-size:7.4pt; line-height:1.55; color:#6B4A45; }
-  .terms { margin-top:3mm; }
+  .terms ol { margin-top:.4mm; }
   .terms ol { margin-left:4.2mm; }
-  .terms li { font-size:7.5pt; line-height:1.42; color:var(--soft); margin-bottom:.45mm; }
+  .terms li { font-size:7.8pt; line-height:1.55; color:var(--soft); margin-bottom:1.1mm; }
   .ft { margin-top:auto; border-top:.25mm solid var(--line); padding-top:2.2mm; display:flex; justify-content:space-between; font-size:6.9pt; color:var(--faint); }
   .ft b { color:var(--soft); font-weight:600; }
   .note-pay { font-size:7.4pt; color:var(--soft); font-style:italic; margin-top:1.8mm; line-height:1.45; }
@@ -85,12 +82,6 @@
 
   <div class="hd">
     <div>
-      <svg class="mark" viewBox="0 0 100 92" fill="none" stroke="#B58C4B" stroke-width="3.4">
-        <path d="M14 46 L50 14 L86 46" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M68 20 L68 8 L80 8 L80 31" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M24 44 L24 88 M76 44 L76 88" stroke-linecap="round"/>
-        <g stroke="none" fill="#B58C4B"><rect x="33" y="62" width="8" height="8" rx="1"/><rect x="46" y="62" width="8" height="8" rx="1"/><rect x="59" y="62" width="8" height="8" rx="1"/></g>
-      </svg>
       <div class="firm">H&nbsp;ANNANDALE</div>
       <div class="firm-sub">Attorneys Inc.</div>
       <div class="addr">
@@ -105,7 +96,7 @@
       <div class="doc-rule"></div>
       <div class="meta">
         <div class="k">Invoice no.</div><div class="v fill">[INV-2026-001]</div>
-        <div class="k">Date</div><div class="v fill">[DD Month 2026]</div>
+        <div class="k">Date</div><div class="v">21 August 2026</div>
         <div class="k">Your reference</div><div class="v fill">[Client ref]</div>
         <div class="k">Prepared by</div><div class="v">Maryke Dique</div>
         <div class="k">VAT reg. no.</div><div class="v fill">[if registered]</div>
@@ -170,21 +161,17 @@
       <div class="bank"><div class="k">Reference</div><div class="v fill">[Invoice no.]</div></div>
       <div class="note-pay">Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.</div>
     </div>
-    <div class="blk warn">
-      <div class="wt">⚠ Important — banking details &amp; fraud warning</div>
-      <p>These banking details do not change. We will never email you new or amended account details. Before making any payment, please telephone this office on 083&nbsp;619&nbsp;2313 — using a number you have independently verified — and confirm the account details verbally. No liability can be accepted for funds paid into an account other than the one confirmed by us in person or telephonically.</p>
+    <div class="blk terms">
+      <div class="lb">Terms</div>
+      <ol>
+        <li>This invoice is payable on presentation unless otherwise agreed in writing.</li>
+        <li>Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.</li>
+        <li>Any query on this account must be raised within 30 days of the date of invoice.</li>
+        <li>Ownership of any design work supplied passes to the client on receipt of payment in full.</li>
+      </ol>
     </div>
   </div>
 
-  <div class="terms">
-    <div class="lb">Terms</div>
-    <ol>
-      <li>This invoice is payable on presentation unless otherwise agreed in writing.</li>
-      <li>Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.</li>
-      <li>Any query on this account must be raised within 30 days of the date of invoice.</li>
-      <li>Ownership of any design work supplied passes to the client on receipt of payment in full.</li>
-    </ol>
-  </div>
 
   <div class="ft">
     <div><b>H Annandale Attorneys Inc.</b> &nbsp;·&nbsp; Reg. no. <span class="fill">[Company reg. no.]</span> &nbsp;·&nbsp; 59 Bolo Street, Moreleta Park, Pretoria</div>
