@@ -63,8 +63,8 @@ const subtotal = ITEMS.reduce((s, r) => s + (r[1] || 0), 0);
 const headerLeft = [
   p(t('H ANNANDALE', { font: SERIF, size: 26, bold: true, color: NAVY, spacing: 80 }), { after: 20 }),
   p(t('ATTORNEYS INC.', { size: 11, color: GOLD, spacing: 80 }), { after: 150 }),
-  p(t('59 Bolo Street, Moreleta Park', { size: 15, color: SOFT }), { after: 10 }),
-  p(t('Pretoria, 0181', { size: 15, color: SOFT }), { after: 10 }),
+  p(t('673B Skukuza Street, Faerie Glen', { size: 15, color: SOFT }), { after: 10 }),
+  p(t('Pretoria, 0081', { size: 15, color: SOFT }), { after: 10 }),
   p(t('maryke@haattorneys.co.za', { size: 15, color: SOFT }), { after: 10 }),
   p(t('083 619 2313', { size: 15, color: SOFT }), { after: 0 }),
 ];
@@ -82,7 +82,6 @@ const headerRight = [
     metaRow('Date', F('DD Month 2026', '21 August 2026', { size: 17, bold: true })),
     metaRow('Your reference', F('Client ref', null, { size: 17, bold: true })),
     metaRow('Prepared by', t('Maryke Dique', { size: 17, bold: true })),
-    metaRow('VAT reg. no.', F('if registered', null, { size: 17, bold: true })),
   ], [1700, 2400]),
 ];
 
@@ -197,7 +196,7 @@ const doc = new Document({
         t('H Annandale Attorneys Inc.', { size: 13, bold: true, color: SOFT }),
         t('   ·   Reg. no. ', { size: 13, color: FAINT }),
         fill('[Company reg. no.]', { size: 13 }),
-        t('   ·   59 Bolo Street, Moreleta Park, Pretoria   ·   E & OE', { size: 13, color: FAINT }),
+        t('   ·   673B Skukuza Street, Faerie Glen, Pretoria   ·   E & OE', { size: 13, color: FAINT }),
       ], { after: 0 }),
     ],
   }],
