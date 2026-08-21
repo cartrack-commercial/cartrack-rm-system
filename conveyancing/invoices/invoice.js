@@ -77,9 +77,9 @@ const headerRight = [
   p(t('TAX INVOICE', { font: SERIF, size: 38, bold: true, color: NAVY, spacing: 40 }), { align: AlignmentType.RIGHT, after: 50 }),
   new Paragraph({ children: [], spacing: { after: 150 }, border: { bottom: { style: BorderStyle.SINGLE, size: 10, color: GOLD } } }),
   tbl([
-    metaRow('Invoice no.', F('INV-2026-001', null, { size: 17, bold: true })),
+    metaRow('Invoice no.', F('INV-2026-001', 'MD1', { size: 17, bold: true })),
     metaRow('Date', F('DD Month 2026', '21 August 2026', { size: 17, bold: true })),
-    metaRow('Your reference', F('Client ref', null, { size: 17, bold: true })),
+    ...(FILLED ? [] : [metaRow('Your reference', fill('[Client ref]', { size: 17, bold: true }))]),
     metaRow('Prepared by', t('Maryke Dique', { size: 17, bold: true })),
   ], [1700, 2400]),
 ];
@@ -144,8 +144,8 @@ const payBlock = [
   bank('Bank', t('ABSA', { size: 17, bold: true })),
   bank('Account number', t('9153076436', { size: 17, bold: true })),
   bank('Branch code', t('632005', { size: 17, bold: true })),
-  bank('Reference', F('Invoice no.', null, { size: 17, bold: true })),
-  p(t('Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.', { size: 14, italics: true, color: SOFT }), { after: 0 }),
+  bank('Reference', F('Invoice no.', 'MD1', { size: 17, bold: true })),
+  p([t('Please use reference ', { size: 14, italics: true, color: SOFT }), t(FILLED ? 'MD1' : 'as above', { size: 14, bold: true, italics: true, color: SOFT }), t(' when paying and email proof of payment to maryke@haattorneys.co.za.', { size: 14, italics: true, color: SOFT })], { after: 0 }),
 ];
 
 // ---------------------------------------------------------------- document
