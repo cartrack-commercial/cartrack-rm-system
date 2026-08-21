@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {
-  Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell,
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   WidthType, BorderStyle, ShadingType, AlignmentType, VerticalAlign,
 } = require('docx');
 
@@ -9,7 +9,7 @@ const {
 const FILLED = process.argv[2] !== 'blank';
 
 const NAVY = '17263A', GOLD = 'B58C4B', INK = '1B2B40', SOFT = '55647A',
-      FAINT = '93A0B2', LINE = 'E3DDD2', PAPER = 'FAF8F4', WARN = 'FBF3F2', RED = 'A33328';
+      FAINT = '93A0B2', LINE = 'E3DDD2', PAPER = 'FAF8F4';
 const SERIF = 'Times New Roman', SANS = 'Arial';
 const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 const NOB = { top: NONE, bottom: NONE, left: NONE, right: NONE };
@@ -61,10 +61,6 @@ const subtotal = ITEMS.reduce((s, r) => s + (r[1] || 0), 0);
 
 // ---------------------------------------------------------------- header
 const headerLeft = [
-  new Paragraph({
-    children: [new ImageRun({ type: 'png', data: fs.readFileSync('logo.png'), transformation: { width: 40, height: 37 } })],
-    spacing: { after: 60 },
-  }),
   p(t('H ANNANDALE', { font: SERIF, size: 26, bold: true, color: NAVY, spacing: 80 }), { after: 20 }),
   p(t('ATTORNEYS INC.', { size: 11, color: GOLD, spacing: 80 }), { after: 150 }),
   p(t('59 Bolo Street, Moreleta Park', { size: 15, color: SOFT }), { after: 10 }),
@@ -83,7 +79,7 @@ const headerRight = [
   new Paragraph({ children: [], spacing: { after: 150 }, border: { bottom: { style: BorderStyle.SINGLE, size: 10, color: GOLD } } }),
   tbl([
     metaRow('Invoice no.', F('INV-2026-001', null, { size: 17, bold: true })),
-    metaRow('Date', F('DD Month 2026', null, { size: 17, bold: true })),
+    metaRow('Date', F('DD Month 2026', '21 August 2026', { size: 17, bold: true })),
     metaRow('Your reference', F('Client ref', null, { size: 17, bold: true })),
     metaRow('Prepared by', t('Maryke Dique', { size: 17, bold: true })),
     metaRow('VAT reg. no.', F('if registered', null, { size: 17, bold: true })),
@@ -153,11 +149,14 @@ const payBlock = [
   bank('Reference', F('Invoice no.', null, { size: 17, bold: true })),
   p(t('Please use the invoice number as your payment reference and email proof of payment to maryke@haattorneys.co.za.', { size: 14, italics: true, color: SOFT }), { after: 0 }),
 ];
-const warnBlock = [
-  p(t('IMPORTANT — BANKING DETAILS & FRAUD WARNING', { size: 13, bold: true, color: RED, spacing: 35 }), { after: 80 }),
-  p(t('These banking details do not change. We will never email you new or amended account details. Before making any payment, please telephone this office on 083 619 2313 — using a number you have independently verified — and confirm the account details verbally. No liability can be accepted for funds paid into an account other than the one confirmed by us in person or telephonically.', { size: 14, color: '6B4A45' }), { after: 0 }),
+const term = (n, s) => p(t(n + '.  ' + s, { size: 14, color: SOFT }), { after: 90 });
+const termsBlock = [
+  lb('Terms'),
+  term(1, 'This invoice is payable on presentation unless otherwise agreed in writing.'),
+  term(2, 'Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.'),
+  term(3, 'Any query on this account must be raised within 30 days of the date of invoice.'),
+  term(4, 'Ownership of any design work supplied passes to the client on receipt of payment in full.'),
 ];
-const term = (n, s) => p(t(n + '.  ' + s, { size: 14, color: SOFT }), { after: 45 });
 
 // ---------------------------------------------------------------- document
 const doc = new Document({
@@ -190,15 +189,9 @@ const doc = new Document({
       tbl([new TableRow({ children: [
         cell(payBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
         cell([], { w: 300 }),
-        cell(warnBlock, { w: 4952, fill: WARN, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
+        cell(termsBlock, { w: 4952, fill: PAPER, valign: VerticalAlign.TOP, m: { top: 190, bottom: 190, left: 220, right: 200 } }),
       ] })], [4952, 300, 4952]),
-      gap(240),
-      lb('Terms'),
-      term(1, 'This invoice is payable on presentation unless otherwise agreed in writing.'),
-      term(2, 'Third-party registration and subscription costs are recovered at cost; supporting invoices are available on request.'),
-      term(3, 'Any query on this account must be raised within 30 days of the date of invoice.'),
-      term(4, 'Ownership of any design work supplied passes to the client on receipt of payment in full.'),
-      gap(160),
+      gap(260),
       new Paragraph({ children: [], spacing: { after: 90 }, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: LINE } } }),
       p([
         t('H Annandale Attorneys Inc.', { size: 13, bold: true, color: SOFT }),
