@@ -103,7 +103,7 @@ const engagement = [
   kv('Service', FILLED ? t('Assisting in new firm setup', { size: 17 }) : fill('[Service]', { size: 17 })),
   kv('Scope', FILLED ? t('Practice registrations, clearance portals, systems and office establishment', { size: 17 })
                      : fill('[Scope of work]', { size: 17 })),
-  kv('Period', F('Month – Month 2026', null, { size: 17 })),
+  kv('Period', F('Month – Month 2026', 'August 2026', { size: 17 })),
   kv('Status', FILLED ? t('Completed', { size: 17 }) : fill('[Status]', { size: 17 })),
 ];
 

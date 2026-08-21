@@ -16,10 +16,10 @@ details sit in the "Invoice to" block. Logo, fraud-warning box and terms have al
 removed at Annè's request (21 Aug 2026).
 The date is hard-coded in the filled invoice and stays a placeholder in the blank template.
 
-## Still to fill in (1 placeholder)
+## Status: complete — nothing left to fill
 
-Only the engagement **period** (`[Month – Month 2026]`). Everything else is set —
-invoice no. and payment reference are both **MD1**, dated 21 August 2026.
+Invoice **MD1**, dated 21 August 2026, period August 2026, R 28 517.40.
+Verified as one page in both PDF and Word, with no placeholder brackets left.
 
 The empty "Your reference" row is hidden on the filled invoice and kept in the blank
 template, so no unfilled bracket ever prints.
