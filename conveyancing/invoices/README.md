@@ -16,10 +16,13 @@ details sit in the "Invoice to" block. Logo, fraud-warning box and terms have al
 removed at Annè's request (21 Aug 2026).
 The date is hard-coded in the filled invoice and stays a placeholder in the blank template.
 
-## Still to fill in (4 placeholders)
+## Still to fill in (1 placeholder)
 
-Invoice number · your client reference (if Annandale gives one) · engagement period ·
-payment reference. Everything else is filled.
+Only the engagement **period** (`[Month – Month 2026]`). Everything else is set —
+invoice no. and payment reference are both **MD1**, dated 21 August 2026.
+
+The empty "Your reference" row is hidden on the filled invoice and kept in the blank
+template, so no unfilled bracket ever prints.
 
 ## Regenerating
 
