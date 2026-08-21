@@ -1,4 +1,4 @@
-# Invoices — H Annandale Attorneys Inc. / Maryke Dique
+# Invoices — Maryke Dique → H Annandale Attorneys Inc.
 
 ## What's here
 
@@ -10,15 +10,16 @@
 | `invoice-doc.html` | Source of the PDF. Edit, then re-render (command below). |
 | `invoice.js` | Generator for both Word files. `node invoice.js setup` / `node invoice.js blank`. |
 
-No logo and no fraud-warning box — both removed at Annè's request on 21 Aug 2026.
-Letterhead address is Maryke's own: 673B Skukuza Street, Faerie Glen, Pretoria, 0081.
+**Who bills whom:** Maryke Dique invoices H Annandale Attorneys Inc. (attention Hesca
+Annandale). The letterhead, footer and bank account are therefore Maryke's own; Annandale's
+details sit in the "Invoice to" block. Logo, fraud-warning box and terms have all been
+removed at Annè's request (21 Aug 2026).
 The date is hard-coded in the filled invoice and stays a placeholder in the blank template.
 
-## Still to fill in (10 placeholders)
+## Still to fill in (4 placeholders)
 
-Invoice number · your client reference · client name, address, email and reg. no. ·
-engagement period · payment reference · company reg. no. in the footer.
-(The date is set; the VAT field has been removed.)
+Invoice number · your client reference (if Annandale gives one) · engagement period ·
+payment reference. Everything else is filled.
 
 ## Regenerating
 
@@ -45,13 +46,14 @@ sed 's|</body>|<script>onload=()=>document.title=(document.querySelector(".pg").
    "VAT reg. no." field has been removed from the letterhead. Note that in South Africa
    only a registered VAT vendor may head a document **TAX INVOICE**; if Maryke is not
    registered the heading should read simply **INVOICE**. One-word change — say the word.
-2. **Whose letterhead.** The name block still reads H Annandale Attorneys Inc., but the
-   address is now Maryke's own (673B Skukuza Street) and the account (ABSA 9153076436) is
-   in her personal name. If she is invoicing personally, swap the name block for her own
-   name and drop the company reg. no. line in the footer.
+2. ~~Whose letterhead~~ — settled 21 Aug 2026: the invoice is **from Maryke, to Annandale**,
+   so the letterhead and footer carry her name, address and phone, and the company reg. no.
+   line is gone (an individual has none).
 3. **Branch code** 632005 is ABSA's universal branch code — worth a glance before sending.
 4. **Fraud warning.** The red banking-fraud box has been removed. Conveyancing payments are
    a common interception target, so consider keeping a line about it in the covering email.
+5. **Terms** have been removed at Annè's request. `invoice.js` and `invoice-doc.html` no
+   longer carry them; restore from git history if they are ever wanted back.
 
 Two wording fixes were made to the supplied list: *Ekhuruleni* → **Ekurhuleni**, and
 *Correspond research* → **Correspondent research**. Say the word if either was intended
