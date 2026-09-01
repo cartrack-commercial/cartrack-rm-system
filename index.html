@@ -352,13 +352,28 @@ async function resolveOrg(){
   // (Lourie, 28 Jul 2026): payout = premium x rate% + broker fee / 2.
   const BROKER_FEE_SHARE=0.5;
   function feeShareOf(r){ return (+r.brokerFee||0)*BROKER_FEE_SHARE; }
+  // ---- Commission model (Lourie, 25 Aug 2026) --------------------------------
+  // The comm stat now gives us a rand commission per client, so the payout is
+  // simply half of it — no rate %, no broker fee. RM_COMMISSION_SHARE stays 0.5,
+  // the same 50/50 split Anne confirmed on 28 Jul; only the input has changed.
+  //
+  // 🚨 Rows captured BEFORE this change carry no `commission`, only premium +
+  // commRate (+ brokerFee). Those must keep paying out exactly what they paid out
+  // at the time — a payroll month that has already been paid may never move. So
+  // payoutOf falls back to the legacy formula whenever commission is absent.
+  const RM_COMMISSION_SHARE=0.5;
+  const hasComm=r=>r&&r.commission!=null&&r.commission!=='';
+  function rmCommOf(r){ return hasComm(r)?(+r.commission||0)*RM_COMMISSION_SHARE:null; }
   function commOf(r){
     const prem=+r.premium||0;
     if(r.commRate!=null) return prem*(+r.commRate/100);
     if(r.rmPct!=null) return prem*BROKERAGE_RATE*(+r.rmPct/100);
     return prem*0.0625;
   }
-  function payoutOf(r){ return commOf(r)+feeShareOf(r); }
+  function payoutOf(r){
+    const c=rmCommOf(r);
+    return c!=null ? c : commOf(r)+feeShareOf(r);   // legacy rows keep their original payout
+  }
   function rateOf(r){
     if(r.commRate!=null) return +r.commRate;
     if(r.rmPct!=null) return +r.rmPct*BROKERAGE_RATE; // rmPct 50 -> 6.25
@@ -760,8 +775,8 @@ async function resolveOrg(){
     for(const r of RMS)(S.portfolio[r.slug]||[]).filter(p=>!p.archived).forEach(p=>{ix[r.slug+'|'+_bookKey(p.client)]=p;});
     return ix;
   }
-  // Pull Active Clients → payroll. The broker fee, policy no. and commission-statement
-  // insurer belong to the client and are the same every month, so a month that was
+  // Pull Active Clients → payroll. The commission, policy no. and UMA (commission-
+  // statement source) belong to the client and are captured there, so a month that was
   // seeded before the fee was captured must be able to pick it up afterwards. Premium
   // and rate % are deliberately NOT touched: those are edited per month on the payroll
   // screen and re-syncing them would wipe Brendan's work.
@@ -769,23 +784,46 @@ async function resolveOrg(){
   //   force=true  → overwrite fee/policy/insurer from the book ("Refresh from book")
   // A fee typed on the payroll screen sets feeEdited and is never auto-overwritten,
   // so a deliberate R0 for one month stays R0.
+  // A payroll month is a DATED SNAPSHOT, not a live view of the book. Once a month
+  // has passed it has been paid, and it is also one of the two records the Recovery
+  // tab rebuilds a lost book from. So the money columns (premium, commission) only
+  // ever refresh on the CURRENT month; earlier months are frozen. Policy number and
+  // UMA are descriptive, not financial, so they may be corrected on any month.
+  // Payroll is closed AFTER month-end — Lourie runs August during September. So the
+  // open window is the current month AND the one before it; anything older is frozen.
+  // A strict "current month only" rule would freeze the very month being worked on.
+  const _ymOf=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const _thisMonth=()=>_ymOf(new Date());
+  const _prevMonth=()=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return _ymOf(d);};
+  const _isOpenMonth=mo=>!mo||mo>=_prevMonth();
   function syncPayrollFromBook(pay,force){
     if(!pay||!Array.isArray(pay.rows))return 0;
     const ix=_bookIndex();let changed=0;
+    const open=_isOpenMonth(pay.month);
     pay.rows.forEach(r=>{
       const p=ix[r.rm+'|'+_bookKey(r.client)];if(!p)return;
       const fee=+p.brokerFee||0;
       if(force?(+r.brokerFee||0)!==fee:(!(+r.brokerFee)&&fee&&!r.feeEdited)){r.brokerFee=fee;changed++;}
+      if(open){
+        // Commission is the new payout input — pull it across the same way the fee was.
+        const comm=(p.commission!=null&&p.commission!=='')?+p.commission:null;
+        if(comm!=null&&(force?(+r.commission||0)!==comm:(!hasComm(r)&&!r.commEdited))){r.commission=comm;changed++;}
+        // Premium is Book Premium for the month; Lourie updates it on Active Clients
+        // off the comm stat. Only force-sync overwrites a figure already typed here.
+        const prem=+p.premium||0;
+        if(force?(!r.premEdited&&(+r.premium||0)!==prem):(!(+r.premium)&&prem)){r.premium=prem;changed++;}
+      }
       if(p.policy&&(force||!r.policy)&&r.policy!==p.policy){r.policy=p.policy;changed++;}
       if(p.insurer&&(force||!r.insurer)&&r.insurer!==p.insurer){r.insurer=p.insurer;changed++;}
     });
-    if(force){ // clients won after the month was seeded are missing entirely — add them
+    if(force&&open){ // clients won after the month was seeded are missing entirely — add them
       const have={};pay.rows.forEach(r=>{have[r.rm+'|'+_bookKey(r.client)]=1;});
       Object.keys(ix).forEach(k=>{
         if(have[k])return;
         const p=ix[k],slug=k.slice(0,k.indexOf('|'));
         pay.rows.push({id:uid(),client:p.client,rm:slug,premium:+p.premium||0,
           commRate:(p.commRate!=null)?+p.commRate:6.25,brokerFee:+p.brokerFee||0,
+          commission:(p.commission!=null&&p.commission!=='')?+p.commission:null,
           policy:p.policy||'',insurer:p.insurer||''});
         changed++;
       });
@@ -1151,7 +1189,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.12a';
+  const APP_VERSION='v2026.08.27a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -1481,8 +1519,8 @@ async function resolveOrg(){
         <div class="field"><label>Policy number</label><input id="cf-pol" type="text" value="${esc(p.policy||'')}" placeholder="e.g. MRXP03339"></div>
         <div class="field"><label>Insurer (commission statement)</label><input id="cf-ins" type="text" value="${esc(p.insurer||'')}" placeholder="Who we get the comm stat from"></div>
       </div>
-      <div class="field"><label>Broker fee (ZAR / month)</label><input id="cf-fee" type="number" step="0.01" value="${p.brokerFee||0}">
-        <div class="help">Half of this is added to the commission on payroll${(+p.brokerFee||0)?` — currently <b>${zar2((+p.brokerFee||0)/2)}</b> a month`:''}.</div></div>
+      <div class="field"><label>Commission (ZAR / month)</label><input id="cf-comm" type="number" step="0.01" value="${p.commission!=null?p.commission:''}" placeholder="0.00">
+        <div class="help">The commission off the comm stat. <b>Half of it is the RM's payout.</b>${(+p.commission||0)?` Currently <b>${zar2((+p.commission||0)/2)}</b> a month`:''}</div></div>
       <div class="field"><label>Account health</label><div class="hp">
         <div class="hp-opt ${p.health==='green'?'sg':''}" data-ch="green">\u{1F7E2} Stable</div>
         <div class="hp-opt ${p.health==='amber'?'sa':''}" data-ch="amber">\u{1F7E1} Watch</div>
@@ -1570,7 +1608,8 @@ async function resolveOrg(){
       rec.lastVisit=document.getElementById('cf-vis').value;
       rec.policy=document.getElementById('cf-pol').value.trim();
       rec.insurer=document.getElementById('cf-ins').value.trim();
-      rec.brokerFee=parseFloat(document.getElementById('cf-fee').value)||0;
+      {const _cv=document.getElementById('cf-comm').value;
+       rec.commission=(_cv===''||_cv==null)?null:(parseFloat(_cv)||0);}
       if(health)rec.health=health;
       await savePortfolio(slug);S.modal=null;render();toast('Client saved');
     };
@@ -2117,7 +2156,8 @@ async function resolveOrg(){
         if(!RMS.some(r=>r.slug===row.rm))return;
         if(_findByName(S.portfolio[row.rm],row.client))return;           // already on the book
         const bits=[zar(+row.premium||0)+'/m',(row.commRate!=null?row.commRate:6.25)+'%'];
-        if(+row.brokerFee)bits.push('fee '+zar(+row.brokerFee));
+        if(+row.commission)bits.push('comm '+zar(+row.commission));
+        else if(+row.brokerFee)bits.push('fee '+zar(+row.brokerFee));
         if(row.insurer)bits.push(row.insurer);
         props.push({slug:row.rm,name:row.client,label:`${rmName(row.rm)} · ${row.client}`,sel:true,
           desc:`Restore Active Client — ${bits.join(' · ')} (from payroll ${month})`,act:'mkclient',w:{row}});
@@ -2312,13 +2352,13 @@ async function resolveOrg(){
       </div>
       ${all.length>1?searchBox('cmdcli-search','Search clients by name or RM…'):''}
       <div class="card" style="padding:6px 0;"><table id="tbl-cmdcli">
-        <tr><th>Client</th><th>RM</th><th>Premium</th><th>Policy no.</th><th>Insurer (comm stat)</th><th>Broker fee</th><th>Renewal</th><th>Last visit</th><th>Health</th></tr>
+        <tr><th>Client</th><th>RM</th><th>Premium</th><th>Policy no.</th><th>UMA (comm stat)</th><th>Commission</th><th>Renewal</th><th>Last visit</th><th>Health</th></tr>
         ${shown.map(p=>{const oc=(p.activity||[]).some(a=>a.type==='claim'&&!a.resolved);
           return `<tr><td><b>${esc(p.client)}</b>${oc?' <span class="stale-tag" style="margin:0;background:var(--red-soft);color:var(--red);">claim</span>':''}</td>
           <td>${esc(p.rmName)}</td><td><input class="cli-prem" data-slug="${p.rmSlug}" data-id="${p.id}" type="number" step="0.01" value="${p.premium||0}" style="width:104px;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
           <td><input class="cli-f" data-f="policy" data-slug="${p.rmSlug}" data-id="${p.id}" type="text" value="${esc(p.policy||'')}" placeholder="—" style="width:120px;font-family:'IBM Plex Mono';font-size:11.5px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
           <td><input class="cli-f" data-f="insurer" data-slug="${p.rmSlug}" data-id="${p.id}" type="text" value="${esc(p.insurer||'')}" placeholder="—" style="width:132px;font-size:11.5px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
-          <td><input class="cli-f" data-f="brokerFee" data-slug="${p.rmSlug}" data-id="${p.id}" type="number" step="0.01" value="${p.brokerFee||0}" title="Half of this is added to the RM's commission on payroll" style="width:92px;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
+          <td><input class="cli-f" data-f="commission" data-slug="${p.rmSlug}" data-id="${p.id}" type="number" step="0.01" value="${p.commission!=null?p.commission:''}" placeholder="0.00" title="Commission off the comm stat. Half of this is the RM's payout."  style="width:92px;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);"></td>
           <td class="mono" style="${soon(p.renewal)?'color:var(--accent-ink);font-weight:700;':''}">${esc(p.renewal||'—')}</td>
           <td class="mono">${esc(p.lastVisit||'—')}</td>
           <td><span class="hb hb-${p.health}"><span class="dot"></span>${HEALTH[p.health]}</span></td></tr>`;}).join('')}
@@ -2338,13 +2378,13 @@ async function resolveOrg(){
     document.querySelectorAll('[data-cbrm]').forEach(b=>b.onclick=()=>{S._cmdBookRM=b.dataset.cbrm;render();});
     // Correct a book premium straight from Command View. Writes to the OWNING RM's
     // portfolio row (shared) so the fix pulls through to everyone.
-    // Policy number / insurer / broker fee — same merge-safe save path as premium,
+    // Policy number / UMA / commission — same merge-safe save path as premium,
     // and the same rollback if the write fails.
     document.querySelectorAll('.cli-f').forEach(inp=>{
       inp.onblur=async()=>{
         const slug=inp.dataset.slug,id=inp.dataset.id,f=inp.dataset.f;
         const rec=(S.portfolio[slug]||[]).find(x=>x.id===id); if(!rec)return;
-        const num=(f==='brokerFee');
+        const num=(f==='brokerFee'||f==='commission');
         const v=num?(inp.value===''?0:(parseFloat(inp.value)||0)):inp.value.trim();
         const oldv=num?(+rec[f]||0):(rec[f]||'');
         if(v===oldv)return;
@@ -2353,7 +2393,7 @@ async function resolveOrg(){
         const shown=num?`${zar(oldv)}→${zar(v)}`:`${oldv||'—'}→${v||'—'}`;
         try{ await savePortfolio(slug);
           logChange(slug,`${rec.client}: ${label} updated ${shown} by ${viewerName()}`,'update');
-          toast(f==='brokerFee'?'Broker fee saved — half pulls through to payroll':'Saved');
+          toast(f==='commission'?'Commission saved — half pulls through to payroll':(f==='brokerFee'?'Broker fee saved':'Saved'));
         }catch(e){ rec[f]=oldv; inp.value=oldv; toast('Save failed — try again'); }
       };
     });
@@ -2999,7 +3039,7 @@ async function resolveOrg(){
     const payout=payoutOf;
     const grandPay=rows.reduce((s,x)=>s+payout(x),0);
     return `<div class="wrap wrap-wide">
-      <div class="note">Every RM's clients are loaded from their book with the actual June premium and commission rate. Just edit any <b>premium</b> or <b>rate %</b> and the payout updates itself. Formula: <b>payout = premium × rate % + half the broker fee</b>. The broker fee comes across from Active Clients and is split 50/50, so only half lands in the payout. Standard recurring is 6.25%; new business runs higher (often 50%). Figures save per month.</div>
+      <div class="note">Each client's <b>premium</b> and <b>commission</b> come across from <b>Active Clients</b>, where Lourie captures them from the comm stat each month. Edit either here and the payout updates itself. Formula: <b>payout = commission ÷ 2</b> — the same 50/50 split as before, just taken off the commission instead of a rate and a broker fee. Figures save per month, and <b>a month that has already closed is frozen</b> — only the current month refreshes from the book.</div>
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px;">
         <div class="field" style="max-width:200px;margin:0;"><label>Payroll month</label><input id="pm" type="month" value="${esc(S.payroll.month)}"></div>
         <div class="kpi" style="flex:1;min-width:180px;"><div class="kpi-l">Total payout, all RMs</div><div class="kpi-v mono" style="font-size:18px;color:var(--green);" id="grand-pay">${zar2(grandPay)}</div></div>
@@ -3016,14 +3056,12 @@ async function resolveOrg(){
             <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0;">${rr.length} client${rr.length===1?'':'s'} · <span data-subpay="${r.slug}">${zar2(subPay)}</span></span>
           </div>
           <div class="card" style="padding:8px 0;">
-            <table><tr><th style="padding-left:12px;">Client</th><th>Premium (R)</th><th>Rate %</th><th>Broker fee</th><th>½ fee</th><th>Payout</th><th></th></tr>
-            ${rr.length===0?`<tr><td colspan="7"><div class="empty" style="padding:12px;">No clients on ${esc(r.name)}'s book yet.</div></td></tr>`:
+            <table><tr><th style="padding-left:12px;">Client</th><th>Premium (R)</th><th>Commission (R)</th><th>RM commission</th><th></th></tr>
+            ${rr.length===0?`<tr><td colspan="5"><div class="empty" style="padding:12px;">No clients on ${esc(r.name)}'s book yet.</div></td></tr>`:
               rr.map(x=>`<tr data-row="${x.id}">
-                <td style="padding-left:12px;"><b>${esc(x.client)}</b>${x.insurer?`<div class="change-time">${esc(x.insurer)}</div>`:''}</td>
+                <td style="padding-left:12px;"><b>${esc(x.client)}</b>${x.insurer?`<div class="change-time">${esc(x.insurer)}</div>`:''}${!hasComm(x)?`<div class="change-time" style="color:var(--accent-ink);">legacy — premium × ${rateOf(x)}% + ½ fee</div>`:''}</td>
                 <td><input class="pay-inp" data-f="premium" data-id="${x.id}" type="number" step="0.01" value="${x.premium||0}"></td>
-                <td><input class="pay-inp pay-pct" data-f="commRate" data-id="${x.id}" type="number" step="0.25" value="${rateOf(x)}"></td>
-                <td><input class="pay-inp" data-f="brokerFee" data-id="${x.id}" type="number" step="0.01" value="${x.brokerFee||0}"></td>
-                <td class="mono" style="color:var(--accent-ink);" data-feeshare="${x.id}">${zar2(feeShareOf(x))}</td>
+                <td><input class="pay-inp" data-f="commission" data-id="${x.id}" type="number" step="0.01" value="${x.commission!=null?x.commission:''}" placeholder="0.00"></td>
                 <td class="mono" style="font-weight:700;color:var(--green);" data-payout="${x.id}">${zar2(payout(x))}</td>
                 <td><button class="del-x" data-del="${x.id}">✕</button></td></tr>`).join('')}
             </table>
@@ -3032,7 +3070,7 @@ async function resolveOrg(){
       }).join('')}
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn" style="flex:1;min-width:180px;" id="paste-rows">Paste a whole list</button>
-        <button class="btn btn-ghost" style="flex:1;min-width:180px;" id="sync-book" title="Pull the broker fee, policy number and insurer across from Active Clients, and add any client won since this month was opened">&#8635; Refresh from Active Clients</button>
+        <button class="btn btn-ghost" style="flex:1;min-width:180px;" id="sync-book" title="Pull the premium, commission, policy number and UMA across from Active Clients, and add any client won since this month was opened. Past months are frozen — only the current month refreshes.">&#8635; Refresh from Active Clients</button>
       </div>
       <div class="help" style="margin-top:6px;">Refresh pulls the <b>broker fee</b>, policy number and insurer across from each RM's book, and adds clients won since this month was opened. Premium and rate % are left exactly as you set them.</div>
     </div>`;
@@ -3073,7 +3111,8 @@ async function resolveOrg(){
         // Typed by hand — from here on the book never silently overwrites it, so a
         // deliberate R0 for one month stays R0.
         else if(f==='brokerFee'){r.brokerFee=num||0;r.feeEdited=true;}
-        else{r.premium=num||0;}
+        else if(f==='commission'){r.commission=num;r.commEdited=true;}
+        else{r.premium=num||0;r.premEdited=true;}
         recalcRow(id);
       };
       inp.onblur=async()=>{await savePayroll();};
@@ -3095,11 +3134,11 @@ async function resolveOrg(){
         <div class="field" id="pc-custom-wrap" style="display:none;"><label>Client name</label><input id="pc-custom" placeholder="e.g. New client not in portfolio"></div>
         <div class="field-row">
           <div class="field"><label>Monthly premium (ZAR)</label><input id="pp" type="number" step="0.01" placeholder="0.00"></div>
-          <div class="field"><label>Rate % of premium</label><input id="prm" type="number" step="0.25" value="6.25"></div>
+          <div class="field"><label>Commission (ZAR)</label><input id="prm" type="number" step="0.01" placeholder="0.00"></div>
         </div>
         <div class="card" style="background:var(--accent-soft);border:none;margin-bottom:12px;">
           <div class="pay-line big" style="border:none;padding:0;"><span>Payout</span><span class="mono" id="pc-payout" style="color:var(--accent-ink);">R 0.00</span></div>
-          <div class="help" style="margin-top:4px;">premium × rate % (6.25% standard, higher for new business)</div>
+          <div class="help" style="margin-top:4px;">half of the commission off the comm stat</div>
         </div>
         <button class="btn btn-primary btn-full" id="psave">Add client</button>
       </div></div>`;
@@ -3115,8 +3154,8 @@ async function resolveOrg(){
     }
     return `<div class="modal-bd" id="mbd"><div class="modal">
       <div class="modal-h"><div class="modal-t">Paste rows</div><button class="x" id="mx">✕</button></div>
-      <div class="help" style="margin-bottom:8px;">One client per line: <b>Client, RM, premium, rate%</b> (rate% optional, defaults 6.25). Example:<br><span class="mono">Avis Isando, Bernard, 557194, 6.25</span></div>
-      <div class="field"><textarea id="pt" style="min-height:140px;" placeholder="Fouries Poultry, Bernard, 251396, 6.25&#10;Full Tank, Cules, 239446, 50"></textarea></div>
+      <div class="help" style="margin-bottom:8px;">One client per line: <b>Client, RM, premium, commission</b>. Example:<br><span class="mono">Avis Isando, Bernard, 557194, 34824.63</span></div>
+      <div class="field"><textarea id="pt" style="min-height:140px;" placeholder="Fouries Poultry, Bernard, 251396, 15712.25&#10;Full Tank, Cules, 239446, 119723.00"></textarea></div>
       <button class="btn btn-primary btn-full" id="pt-save">Import rows</button>
     </div></div>`;
   }
@@ -3129,7 +3168,7 @@ async function resolveOrg(){
       const premEl=document.getElementById('pp');
       const pctEl=document.getElementById('prm');
       const payEl=document.getElementById('pc-payout');
-      const recalc=()=>{const p=parseFloat(premEl.value)||0;const pct=parseFloat(pctEl.value)||0;payEl.textContent=zar2(p*(pct/100));};
+      const recalc=()=>{const c=parseFloat(pctEl.value)||0;payEl.textContent=zar2(c*RM_COMMISSION_SHARE);};
       sel.onchange=()=>{
         if(sel.value==='__custom'){custom.style.display='';premEl.value='';}
         else{custom.style.display='none';const opt=sel.options[sel.selectedIndex];const pr=opt?opt.getAttribute('data-prem'):0;if(pr)premEl.value=pr;}
@@ -3141,8 +3180,8 @@ async function resolveOrg(){
         if(client==='__custom')client=(document.getElementById('pc-custom').value||'').trim();
         if(!client||client==='')  {toast('Pick or type a client');return;}
         const premium=parseFloat(premEl.value)||0;
-        const commRate=pctEl.value===''?6.25:(parseFloat(pctEl.value)||0);
-        S.payroll.rows.push({id:uid(),client,rm:S.modal.slug,premium,commRate});
+        const commission=pctEl.value===''?null:(parseFloat(pctEl.value)||0);
+        S.payroll.rows.push({id:uid(),client,rm:S.modal.slug,premium,commission,commEdited:true});
         await savePayroll();S.modal=null;render();toast('Client added');
       };
     }else if(S.modal.type==='salary'){
@@ -3156,9 +3195,9 @@ async function resolveOrg(){
         let added=0;
         lines.forEach(l=>{const parts=l.split(',').map(x=>x.trim());if(parts.length<3)return;
           const client=parts[0];const rmGuess=parts[1].toLowerCase();const premium=parseFloat(parts[2].replace(/[^\d.]/g,''))||0;
-          const commRate=parts[3]!=null&&parts[3]!==''?(parseFloat(parts[3])||6.25):6.25;
+          const commission=parts[3]!=null&&parts[3]!==''?(parseFloat(parts[3].replace(/[^\d.-]/g,''))||0):null;
           const rm=(RMS.find(r=>r.name.toLowerCase()===rmGuess||r.slug===rmGuess)||{}).slug;
-          if(!rm||!client)return;S.payroll.rows.push({id:uid(),client,rm,premium,commRate});added++;});
+          if(!rm||!client)return;S.payroll.rows.push({id:uid(),client,rm,premium,commission,commEdited:commission!=null});added++;});
         await savePayroll();S.modal=null;render();toast(`${added} row${added===1?'':'s'} imported`);
       };
     }
@@ -3169,13 +3208,15 @@ async function resolveOrg(){
     const payout=payoutOf;
     const per=RMS.map(r=>{const rr=rows.filter(x=>x.rm===r.slug);
       const prem=rr.reduce((s,x)=>s+(+x.premium||0),0);
-      const broker=prem*BROKERAGE_RATE;
+      // Full commission off the comm stat. Legacy rows (no commission captured) are
+      // shown at twice their payout so the column still reconciles against RM comm.
+      const comm=rr.reduce((s,x)=>s+(hasComm(x)?(+x.commission||0):payout(x)*2),0);
       const rmComm=rr.reduce((s,x)=>s+payout(x),0);
       const sal=+((S.payroll.salary||{})[r.slug]||0);
-      return{slug:r.slug,name:r.full,clients:rr.length,prem,broker,rmComm,sal,net:rmComm-sal};}).filter(r=>r.clients>0||r.sal>0);
-    const tot=per.reduce((a,r)=>({prem:a.prem+r.prem,broker:a.broker+r.broker,rmComm:a.rmComm+r.rmComm,sal:a.sal+r.sal,net:a.net+r.net,clients:a.clients+r.clients}),{prem:0,broker:0,rmComm:0,sal:0,net:0,clients:0});
+      return{slug:r.slug,name:r.full,clients:rr.length,prem,comm,rmComm,sal,net:rmComm-sal};}).filter(r=>r.clients>0||r.sal>0);
+    const tot=per.reduce((a,r)=>({prem:a.prem+r.prem,comm:a.comm+r.comm,rmComm:a.rmComm+r.rmComm,sal:a.sal+r.sal,net:a.net+r.net,clients:a.clients+r.clients}),{prem:0,comm:0,rmComm:0,sal:0,net:0,clients:0});
     return `<div class="wrap wrap-wide">
-      <div class="note">Accountant-ready payout for <b>${esc(S.payroll.month||'—')}</b>. Each client's commission = premium × 12.5% × that client's RM %, less any assistant-salary split. Tap "Copy for accountant" to send it off.</div>
+      <div class="note">Accountant-ready payout for <b>${esc(S.payroll.month||'—')}</b>. Each client's payout = commission ÷ 2, less any assistant-salary split. Tap "Copy for accountant" to send it off.</div>
       <div class="card" style="background:linear-gradient(135deg,#0B0C0F,#2F343D);color:#fff;border:none;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
           <div><div style="font-size:12px;opacity:.7;">Total RM commission — everyone, ${esc(S.payroll.month||'—')}</div>
@@ -3186,13 +3227,13 @@ async function resolveOrg(){
         </div>
       </div>
       <div class="card" style="padding:6px 0;"><table>
-        <tr><th>RM</th><th>Clients</th><th>Premium</th><th>Broker 12.5%</th><th>RM commission</th><th>Less salary</th><th>Net payout</th><th></th></tr>
+        <tr><th>RM</th><th>Clients</th><th>Premium</th><th>Commission</th><th>RM commission</th><th>Less salary</th><th>Nett payout</th><th></th></tr>
         ${per.length===0?'<tr><td colspan="8"><div class="empty" style="padding:16px;">No commission entered for this month yet.</div></td></tr>':
-        per.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.clients}</td><td class="mono">${zar2(r.prem)}</td><td class="mono">${zar2(r.broker)}</td>
+        per.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.clients}</td><td class="mono">${zar2(r.prem)}</td><td class="mono">${zar2(r.comm)}</td>
           <td class="mono">${zar2(r.rmComm)}</td><td class="mono" style="color:${r.sal>0?'var(--red)':'inherit'}">${r.sal>0?'-'+zar2(r.sal):'—'}</td>
           <td class="mono" style="font-weight:700;">${zar2(r.net)}</td>
           <td><button class="link-btn" data-sal="${r.slug}">salary</button></td></tr>`).join('')}
-        ${per.length?`<tr class="tot-row"><td>TOTAL</td><td>${tot.clients}</td><td class="mono">${zar2(tot.prem)}</td><td class="mono">${zar2(tot.broker)}</td><td class="mono">${zar2(tot.rmComm)}</td><td class="mono">${tot.sal>0?'-'+zar2(tot.sal):'—'}</td><td class="mono">${zar2(tot.net)}</td><td></td></tr>`:''}
+        ${per.length?`<tr class="tot-row"><td>TOTAL</td><td>${tot.clients}</td><td class="mono">${zar2(tot.prem)}</td><td class="mono">${zar2(tot.comm)}</td><td class="mono">${zar2(tot.rmComm)}</td><td class="mono">${tot.sal>0?'-'+zar2(tot.sal):'—'}</td><td class="mono">${zar2(tot.net)}</td><td></td></tr>`:''}
       </table></div>
       ${per.length?`<button class="btn btn-navy btn-full" id="cp-acc">Copy for accountant</button><div id="acc-out"></div>`:''}
     </div>`;
@@ -3202,13 +3243,32 @@ async function resolveOrg(){
       S.modal={type:'salary',slug:b.dataset.sal};render();
     });
     const cp=document.getElementById('cp-acc');if(cp)cp.onclick=()=>{
-      const rows=S.payroll.rows;
-      const payout=payoutOf;
-      const per=RMS.map(r=>{const rr=rows.filter(x=>x.rm===r.slug);const prem=rr.reduce((s,x)=>s+(+x.premium||0),0);const rmComm=rr.reduce((s,x)=>s+payout(x),0);const sal=+((S.payroll.salary||{})[r.slug]||0);return{name:r.full,clients:rr.length,prem,rmComm,sal,net:rmComm-sal};}).filter(r=>r.clients>0||r.sal>0);
-      let t=`CARTRACK COMMERCIAL — RM COMMISSION (${S.payroll.month})\nBrokerage 12.5% of premium · RM % applied per client\n\n`;
-      per.forEach(r=>{t+=`${r.name}\n  Clients: ${r.clients} · Premium: ${zar2(r.prem)}\n  RM commission: ${zar2(r.rmComm)}${r.sal>0?`\n  Less assistant salary: -${zar2(r.sal)}`:''}\n  NET PAYOUT: ${zar2(r.net)}\n\n`;});
-      const totNet=per.reduce((s,r)=>s+r.net,0);t+=`TOTAL NET PAYOUT: ${zar2(totNet)}`;
-      navigator.clipboard?navigator.clipboard.writeText(t).then(()=>toast('Copied for accountant')):toast('Copy not supported');
+      // Lourie, 25 Aug 2026: the accountant needs every RM's FULL book, not a summary —
+      // client, policy number, premium, full commission, the RM's half, and the UMA the
+      // comm stat came from. Tab-separated so it pastes straight into a spreadsheet.
+      const rows=S.payroll.rows, payout=payoutOf, num=n=>(+n||0).toFixed(2);
+      const COLS=['Client Name','Policy Number','Premium','Commission','RM Commission','UMA'];
+      let t=`CARTRACK COMMERCIAL — RM COMMISSION (${S.payroll.month||'—'})\nPayout = commission ÷ 2\n`;
+      let gPrem=0,gComm=0,gRm=0,gNet=0;
+      RMS.forEach(r=>{
+        const rr=rows.filter(x=>x.rm===r.slug);
+        const sal=+((S.payroll.salary||{})[r.slug]||0);
+        if(!rr.length&&!sal)return;
+        let prem=0,comm=0,rmComm=0;
+        t+=`\n${r.full}\n${COLS.join('\t')}\n`;
+        rr.forEach(x=>{
+          const c=hasComm(x)?(+x.commission||0):payout(x)*2, rc=payout(x);
+          prem+=(+x.premium||0); comm+=c; rmComm+=rc;
+          t+=[x.client||'',x.policy||'',num(x.premium),num(c),num(rc),x.insurer||''].join('\t')+'\n';
+        });
+        t+=['TOTAL','',num(prem),num(comm),num(rmComm),''].join('\t')+'\n';
+        if(sal>0) t+=['Less Salary','','','',num(-sal),''].join('\t')+'\n';
+        const net=rmComm-sal;
+        t+=['NETT PAYOUT','','','',num(net),''].join('\t')+'\n';
+        gPrem+=prem; gComm+=comm; gRm+=rmComm; gNet+=net;
+      });
+      t+=`\nALL RMs\t\t${num(gPrem)}\t${num(gComm)}\t${num(gRm)}\t\nTOTAL NETT PAYOUT\t\t\t\t${num(gNet)}\t\n`;
+      navigator.clipboard?navigator.clipboard.writeText(t).then(()=>toast('Full book copied for accountant')):toast('Copy not supported');
     };
   }
 
