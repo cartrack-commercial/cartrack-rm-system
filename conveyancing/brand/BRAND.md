@@ -79,6 +79,7 @@ logo ever needs to appear large.
 | `../letters/trust-letter.html` | Registration of an Inter Vivos Trust — **faithful reproduction** of the firm's own letter: same wording, same bullet structure, same Debit/Credit fee table (R 22 000.00). Only the typos below were fixed. |
 | `../invoices/invoice-doc.html` | Tax invoice MD1 — Maryke → H Annandale, R 28 517.40 |
 | `../invoices/invoice.js` | Word version of the invoice (`node invoice.js setup\|blank`) |
+| `../agreements/consultant-agreement.html` | **DRAFT** Agreement for Conveyancing Services — the Firm (Hesca, as Director) and Maryke. Written to protect the Director: supervision, what Maryke may not do or sign, no trust-account authority, firm ownership of work/systems/data, confidentiality and POPIA, restraint, indemnity. Page 4 is an internal note listing what Hesca must settle, and is marked to be detached before signature. **Not advice — Hesca settles it.** |
 | `../matters/chartwell-summary.html` | Deed of sale summary — Holding 34 Chartwell |
 
 ### Decisions already made — don't undo these by accident
@@ -102,6 +103,12 @@ logo ever needs to appear large.
   missing spaces in "consideration.Once" and "jurisdiction.The"; a comma after
   "Relationship to the founder(s)" made a semicolon; the table's clipped column headers
   restored to **Debit** / **Credit**.
+
+### Open questions on the agreement
+Maryke's admitted status is unknown, and it is the hinge of the whole document — it drives
+clauses 1.3, 2.3.2, 2.3.4 and 3.4 and what title she may carry. The contractor-vs-employee
+characterisation and the uncapped indemnity in 7.3 are the other two live points. Annexure A
+(scope) and Annexure B (fees) are still to be drafted.
 
 ### Gotcha: `li::before` in brand.css
 `brand.css` styles **every** `li::before` as a gold circle. Any custom list marker must
