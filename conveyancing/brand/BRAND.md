@@ -74,6 +74,7 @@ logo ever needs to appear large.
 
 | File | What it is |
 |---|---|
+| `../letters/transfer-process-option{1,2,3}.html` | Three variants of the transfer guide, differing only in where the **drafting of the deed** sits. Awaiting Maryke's choice — she is the conveyancer. 1: nine steps, drafting folded into step 6. 2: ten steps, drafting stands alone as step 4. 3: nine steps, drafting named early at step 3 with the documents. `build_options.py` regenerates all three from the base file and auto-fits each to two pages. Once she picks, rebuild that one as `transfer-process.html` and delete the rest. |
 | `../letters/transfer-process.html` | Transfer of Property — the Process, Step by Step. Client-facing guide: nine numbered steps with indicative timings and what is needed from the client, the three-attorney explanation, causes of delay, and a payment-fraud warning. Two pages. |
 | `../letters/trust-letter.html` | Registration of an Inter Vivos Trust — **faithful reproduction** of the firm's own letter: same wording, same bullet structure, same Debit/Credit fee table (R 22 000.00). Only the typos below were fixed. |
 | `../invoices/invoice-doc.html` | Tax invoice MD1 — Maryke → H Annandale, R 28 517.40 |
