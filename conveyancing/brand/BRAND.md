@@ -74,7 +74,7 @@ logo ever needs to appear large.
 
 | File | What it is |
 |---|---|
-| `../letters/trust-letter.html` | Registration of an Inter Vivos Trust — client letter + fee schedule (R 22 000.00) |
+| `../letters/trust-letter.html` | Registration of an Inter Vivos Trust — **faithful reproduction** of the firm's own letter: same wording, same bullet structure, same Debit/Credit fee table (R 22 000.00). Only the typos below were fixed. |
 | `../invoices/invoice-doc.html` | Tax invoice MD1 — Maryke → H Annandale, R 28 517.40 |
 | `../invoices/invoice.js` | Word version of the invoice (`node invoice.js setup\|blank`) |
 | `../matters/chartwell-summary.html` | Deed of sale summary — Holding 34 Chartwell |
@@ -90,6 +90,17 @@ logo ever needs to appear large.
   firm letterhead documents.
 - **No terms block** on the invoice (Annè, 21 Aug 2026).
 - Invoice reference **MD1**, used as both invoice number and payment reference.
+- The **trust letter is a reproduction, not a rewrite.** Keep the firm's own wording and the
+  •/➢ list structure. Typos silently corrected against the printed original: "Copy of ID
+  document **of** passport" → "or passport" (twice); runner's fee "1 875.0" → "1 875.00";
+  missing spaces in "consideration.Once" and "jurisdiction.The"; a comma after
+  "Relationship to the founder(s)" made a semicolon; the table's clipped column headers
+  restored to **Debit** / **Credit**.
+
+### Gotcha: `li::before` in brand.css
+`brand.css` styles **every** `li::before` as a gold circle. Any custom list marker must
+override `background`, `border-radius` and `border` explicitly, or the circle paints behind
+it — this produced a blob instead of an arrow in the trust letter until it was caught.
 
 ---
 
