@@ -7,37 +7,47 @@
 <link rel="stylesheet" href="../brand/brand.css">
 <style>
   .sheet { padding:9mm 14mm 7mm; }
-  .lh { padding:4.8mm 8mm; margin-bottom:4.4mm; gap:7mm; }
+  .lh { padding:4.4mm 8mm; margin-bottom:3.2mm; gap:7mm; }
   .lh-mark { width:16.5mm; }
   .lh-name { font-size:15pt; }
-  .lh-contact { font-size:8pt; line-height:1.7; }
-  .sec { margin:3.4mm 0 1.5mm; }
-  p { font-size:8.6pt; line-height:1.55; }
-  p + p { margin-top:1.8mm; }
-  .doc-title { font-size:11pt; margin:.5mm 0 3.4mm; }
+  .lh-contact { font-size:8pt; line-height:1.6; }
   .foot { padding-top:3mm; }
-  table.fees td { padding:1.6mm 3.4mm; }
-  table.fees tr.total td { padding:2.2mm 3.4mm; }
-</style>
-<style>
-  .to { display:flex; gap:6mm; margin-bottom:4mm; }
-  .to .k { font-size:7pt; letter-spacing:.13em; text-transform:uppercase;
-           color:var(--faint); width:22mm; flex-shrink:0; padding-top:.6mm; }
-  .to .v { font-size:9pt; color:var(--ink); flex:1; }
-  .to .v .fill { color:#A8B0B8; font-style:italic; }
-  .rule { height:.35mm; background:var(--line); margin:2.6mm 0 3mm; }
-  .req { margin-top:1mm; }
-  .req > li { margin-bottom:2.4mm; }
-  .req > li > b { color:var(--ink); }
-  .rq { border-top:.25mm solid var(--line); }
-  .rq .row { display:flex; gap:5mm; padding:1.55mm 0; border-bottom:.25mm solid var(--line); }
-  .rq .k { font-size:7.4pt; font-weight:700; letter-spacing:.06em; color:var(--ink);
-           width:31mm; flex-shrink:0; padding-top:.3mm; }
-  .rq .v { font-size:8.4pt; line-height:1.5; color:var(--soft); flex:1; }
-  .rq .v em { font-style:normal; color:var(--gold-ink); }
-  .sign { margin-top:2.6mm; font-size:8.6pt; line-height:1.55; }
-  .sign .nm { font-weight:700; margin-top:3mm; font-size:9pt; }
-  .sign .rl { font-size:8pt; color:var(--soft); }
+
+  /* the contact line the firm keeps under the band */
+  .contact-line { font-size:8.2pt; line-height:1.45; color:var(--ink); margin-bottom:3.2mm; }
+  .contact-line a { color:#2B5FA8; text-decoration:underline; }
+
+  .title { font-size:10.6pt; font-weight:700; text-align:center; letter-spacing:.02em;
+           text-transform:uppercase; margin-bottom:2.8mm; }
+  p { font-size:8.5pt; line-height:1.44; text-align:justify; }
+  p + p { margin-top:2mm; }
+  .intro-b { font-weight:700; }
+
+  /* level 1: • bullets */
+  ul.l1 { list-style:none; margin:2.4mm 0 0; }
+  ul.l1 > li { position:relative; padding-left:6mm; margin-bottom:1.9mm;
+               font-size:8.5pt; line-height:1.42; font-weight:700; }
+  ul.l1 > li::before { content:""; position:absolute; left:1.6mm; top:1.5mm;
+                       width:1.7mm; height:1.7mm; border-radius:50%; background:var(--ink); border:none; }
+  /* level 2: ➢ arrows, regular weight */
+  ul.l2 { list-style:none; margin:1mm 0 0 4mm; }
+  ul.l2 > li { position:relative; padding-left:6mm; margin-bottom:.45mm;
+               font-size:8.3pt; line-height:1.36; font-weight:400; }
+  ul.l2 > li::before { content:""; position:absolute; left:.4mm; top:1.25mm;
+                       width:0; height:0; background:none; border-radius:0;
+                       border-left:2.1mm solid var(--gold-ink);
+                       border-top:1.05mm solid transparent; border-bottom:1.05mm solid transparent; }
+
+  table.acct { width:100%; border-collapse:collapse; margin-top:3mm;
+               border:.4mm solid var(--band); }
+  table.acct th { background:var(--band); color:#fff; font-size:7pt; font-weight:700;
+                  letter-spacing:.13em; text-transform:uppercase; padding:2mm 3mm; text-align:left; }
+  table.acct th.r, table.acct td.r { text-align:right; }
+  table.acct td { font-size:8.4pt; padding:1.2mm 3mm; border-bottom:.2mm solid var(--line); }
+  table.acct td.r { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  table.acct col.money { width:30mm; }
+  table.acct tr.total td { background:var(--paper); font-weight:700; font-size:8.8pt;
+                           border-top:.4mm solid var(--band); border-bottom:none; padding:1.8mm 3mm; }
 </style>
 </head>
 <body>
@@ -63,68 +73,73 @@
     </div>
     <div class="lh-div"></div>
     <div class="lh-contact">
-      <div class="r"><span class="i">☎</span><span>060&nbsp;981&nbsp;3036 &nbsp;·&nbsp; 083&nbsp;619&nbsp;2313</span></div>
-      <div class="r"><span class="i">✉</span><span>hesca@haattorneys.co.za &nbsp;·&nbsp; maryke@haattorneys.co.za</span></div>
-      <div class="r"><span class="i">⌂</span><span>59 Bolo Street, Moreleta Park, Pretoria, 0181</span></div>
+      <div class="r"><span class="i">☎</span><span>060&nbsp;981&nbsp;3036</span></div>
+      <div class="r"><span class="i">✉</span><span>hesca@haattorneys.co.za</span></div>
+      <div class="r"><span class="i">⌂</span><span>59 Bolo Street, Moreleta Park<br>Pretoria, 0181</span></div>
     </div>
   </div>
 
-  <!-- ============ addressee ============ -->
-  <div class="to" style="margin-bottom:0;">
-    <div class="k">Attention</div><div class="v fill">[Client name]</div>
-    <div class="k" style="width:12mm;">Date</div><div class="v fill" style="flex:0 0 34mm;">[Date]</div>
+  <div class="contact-line">
+    060 981 3036; 083 619 2313<br>
+    Email: <a href="mailto:hesca@haattorneys.co.za">hesca@haattorneys.co.za</a>; <a href="mailto:maryke@haattorneys.co.za">maryke@haattorneys.co.za</a>
   </div>
 
-  <div class="rule"></div>
+  <div class="title">Registration of an Inter Vivos Trust</div>
 
-  <div class="doc-title">Registration of an Inter Vivos Trust</div>
+  <p>We refer to the above and would like to thank you for entrusting our Firm with the establishment of your trust. We realise that you might be unfamiliar with the trust registration process and would like to brief you in an attempt to better your understanding in the process.</p>
 
-  <p>We refer to the above and thank you for entrusting our firm with the establishment of your trust. We appreciate that the registration process may be unfamiliar to you, and set out below what we require from you and what you can expect from us.</p>
+  <p class="intro-b">In order for us to prepare the trust deed and attend to the necessary documentation, kindly provide us with the following information and documentation:</p>
 
-  <div class="sec">What we need from you</div>
-  <p style="margin-bottom:2mm;">In order to prepare the trust deed and attend to the necessary documentation, kindly provide us with the following:</p>
+  <ul class="l1">
+    <li>The proposed name of the trust;</li>
 
-  <div class="rq">
-    <div class="row"><div class="k">Name of the trust</div>
-      <div class="v">The proposed name of the trust.</div></div>
-    <div class="row"><div class="k">Founder</div>
-      <div class="v">Full names and surname · copy of identity document or passport · residential address · contact details.</div></div>
-    <div class="row"><div class="k">Trustees</div>
-      <div class="v">Full names and surname · copy of identity document or passport · residential address · contact details.<br>
-      <em>Trustees must accept their appointment, and may only act once the Master has issued the Letters of Authority.</em></div></div>
-    <div class="row"><div class="k">Beneficiaries</div>
-      <div class="v">Full names and surnames · identity numbers or dates of birth · relationship to the founder.<br>
-      <em>If future children or descendants are also intended to be beneficiaries, please tell us so the deed can be drafted accordingly.</em></div></div>
-    <div class="row"><div class="k">FICA</div>
-      <div class="v">Identification for each relevant party — a birth certificate where a beneficiary is a minor — together with proof of address.</div></div>
-  </div>
+    <li>Details of the FOUNDER:
+      <ul class="l2">
+        <li>Full names and surname;</li>
+        <li>Copy of ID document or passport;</li>
+        <li>Residential address; and</li>
+        <li>Contact details.</li>
+      </ul>
+    </li>
 
-  <div class="sec">How the process runs</div>
-  <p>Once the above has been received we prepare the draft trust deed for your consideration. The deed and supporting documentation are then signed and completed, after which the application is submitted to the Master of the High Court having jurisdiction. The Master considers the application and, once the requirements have been satisfied, issues the <b>Letters of Authority</b> to the appointed trustees — only from that point may the trustees act.</p>
+    <li>Trustee(s) (please note that the trustees will be required to accept their appointment and will only be authorised to act once the Master of the High Court has issued the relevant Letters of Authority)
+      <ul class="l2">
+        <li>Full names and surname;</li>
+        <li>Copy of ID document or passport;</li>
+        <li>Residential address; and</li>
+        <li>Contact details.</li>
+      </ul>
+    </li>
 
-  <div class="sec">Our fees and disbursements</div>
-  <table class="fees">
+    <li>Beneficiaries
+      <ul class="l2">
+        <li>Full names and surnames;</li>
+        <li>ID numbers or dates of birth;</li>
+        <li>Relationship to the founder(s);</li>
+        <li>If future children or descendants are also intended to be beneficiaries, please advise us so that the trust deed can be drafted accordingly.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <p style="margin-top:2.4mm;">For FICA purposes, we will require the necessary identification (copy of birth certificate in the event of the beneficiary being a minor) and proof of address for the relevant parties.</p>
+
+  <p>Once we have received the above information and documentation, we will be able to proceed with preparing the draft trust deed for your consideration. Once the trust deed and supporting documentation have been signed and completed, the application will be prepared for submission to the Master of the High Court having jurisdiction. The Master will consider the application, and once the requirements have been satisfied, issue Letters of Authority to the appointed trustees.</p>
+
+  <table class="acct">
+    <colgroup><col><col class="money"><col class="money"></colgroup>
     <thead>
-      <tr><th>Description</th><th class="r" style="width:34mm;">Amount</th></tr>
+      <tr><th>Description</th><th class="r">Debit</th><th class="r">Credit</th></tr>
     </thead>
     <tbody>
-      <tr><td>Professional fee — opening of trust file</td><td class="r">R 4 000.00</td></tr>
-      <tr><td>Professional fee — drafting of trust deed and registration</td><td class="r">R 12 375.00</td></tr>
-      <tr><td>Compliance — FICA identification and verification</td><td class="r">R 2 000.00</td></tr>
-      <tr><td>Disbursements — Master of the High Court registration fee</td><td class="r">R 250.00</td></tr>
-      <tr><td>Postage and petties</td><td class="r">R 1 500.00</td></tr>
-      <tr><td>Master of the High Court runner's fee (at the current rate)</td><td class="r">R 1 875.00</td></tr>
-      <tr class="total"><td>Total amount due</td><td class="r">R 22 000.00</td></tr>
+      <tr><td>Professional Fee – Opening of Trust File</td><td class="r">4 000.00</td><td class="r"></td></tr>
+      <tr><td>Professional Fee – Drafting of Trust Deed and Registration</td><td class="r">12 375.00</td><td class="r"></td></tr>
+      <tr><td>Compliance – FICA Identification and Verification</td><td class="r">2 000.00</td><td class="r"></td></tr>
+      <tr><td>Disbursements – Master of the High Court Registration Fee</td><td class="r">250.00</td><td class="r"></td></tr>
+      <tr><td>To Postage and Petties</td><td class="r">1 500.00</td><td class="r"></td></tr>
+      <tr><td>To Master of the High Court Runner's Fee (current rate)</td><td class="r">1 875.00</td><td class="r"></td></tr>
+      <tr class="total"><td>TOTAL AMOUNT DUE</td><td class="r">22 000.00</td><td class="r"></td></tr>
     </tbody>
   </table>
-
-  <p style="font-size:8.2pt;color:var(--soft);margin-top:2.2mm;">Kindly note that the above amount is payable into our trust account before work commences. Disbursements are recovered at cost, and the Master's runner's fee is charged at the rate applicable at the time of lodgement.</p>
-
-  <div class="sign">
-    <p style="font-size:9pt;">Should you have any questions about any part of the process, please do not hesitate to contact us.</p>
-    <div class="nm">H ANNANDALE ATTORNEYS INC.</div>
-    <div class="rl">Per: <span style="color:#A8B0B8;font-style:italic;">[Name]</span></div>
-  </div>
 
   <!-- ============ footer bands ============ -->
   <div class="foot">
