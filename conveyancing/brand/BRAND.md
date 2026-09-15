@@ -90,7 +90,11 @@ logo ever needs to appear large.
   firm letterhead documents.
 - **No terms block** on the invoice (Annè, 21 Aug 2026).
 - Invoice reference **MD1**, used as both invoice number and payment reference.
-- The **trust letter is a reproduction, not a rewrite.** Keep the firm's own wording and the
+- The **trust letter is a reproduction, not a rewrite.** The firm's wording is reproduced
+  verbatim; what was improved is the *setting* — a proper Attention / Our ref / Date strip,
+  a gold rule under the title, an accounting table with real Debit/Credit columns and a
+  navy total bar, and a sign-off block. The duplicated contact line that sat under the
+  letterhead band was dropped (the band already carries it). Keep the firm's own wording and the
   •/➢ list structure. Typos silently corrected against the printed original: "Copy of ID
   document **of** passport" → "or passport" (twice); runner's fee "1 875.0" → "1 875.00";
   missing spaces in "consideration.Once" and "jurisdiction.The"; a comma after

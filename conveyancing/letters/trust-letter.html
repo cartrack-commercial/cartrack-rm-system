@@ -6,48 +6,71 @@
 <link rel="stylesheet" href="../fonts/fonts.css">
 <link rel="stylesheet" href="../brand/brand.css">
 <style>
-  .sheet { padding:9mm 14mm 7mm; }
-  .lh { padding:4.4mm 8mm; margin-bottom:3.2mm; gap:7mm; }
-  .lh-mark { width:16.5mm; }
-  .lh-name { font-size:15pt; }
-  .lh-contact { font-size:8pt; line-height:1.6; }
-  .foot { padding-top:3mm; }
+  .sheet { padding:9mm 15mm 5mm; }
+  .foot { padding-top:2.2mm; }
 
-  /* the contact line the firm keeps under the band */
-  .contact-line { font-size:8.2pt; line-height:1.45; color:var(--ink); margin-bottom:3.2mm; }
-  .contact-line a { color:#2B5FA8; text-decoration:underline; }
+  /* ---- letterhead ---- */
+  .lh { padding:4.5mm 8mm; margin-bottom:0; gap:6mm; align-items:center; }
+  .lh-mark { width:15.2mm; }
+  .lh-name { font-size:15.5pt; letter-spacing:.18em; }
+  .lh-sub { font-size:6.4pt; letter-spacing:.33em; }
+  .lh-contact { font-size:7.5pt; line-height:1.62; white-space:nowrap; }
+  .lh-contact .i { font-size:7.4pt; }
 
-  .title { font-size:10.6pt; font-weight:700; text-align:center; letter-spacing:.02em;
-           text-transform:uppercase; margin-bottom:2.8mm; }
-  p { font-size:8.5pt; line-height:1.44; text-align:justify; }
-  p + p { margin-top:2mm; }
+  /* ---- reference strip ---- */
+  .ref { display:flex; justify-content:space-between; align-items:baseline;
+         border-bottom:.25mm solid var(--line); padding:2.2mm .5mm 1.9mm; margin-bottom:3.2mm; }
+  .ref .cell { display:flex; gap:2.6mm; align-items:baseline; }
+  .ref .k { font-size:6.6pt; letter-spacing:.17em; text-transform:uppercase; color:var(--faint); }
+  .ref .v { font-size:8.5pt; color:#AEB5BC; font-style:italic; }
+
+  /* ---- title ---- */
+  .title { text-align:center; margin-bottom:2.9mm; }
+  .title h1 { font-size:10.8pt; font-weight:700; letter-spacing:.055em;
+              text-transform:uppercase; color:var(--ink); }
+  .title .u { width:24mm; height:.45mm; background:var(--gold); margin:1.3mm auto 0; }
+
+  /* ---- body ---- */
+  p { font-size:8.5pt; line-height:1.45; text-align:justify; }
+  p + p { margin-top:1.9mm; }
   .intro-b { font-weight:700; }
 
-  /* level 1: • bullets */
   ul.l1 { list-style:none; margin:2.4mm 0 0; }
-  ul.l1 > li { position:relative; padding-left:6mm; margin-bottom:1.9mm;
-               font-size:8.5pt; line-height:1.42; font-weight:700; }
-  ul.l1 > li::before { content:""; position:absolute; left:1.6mm; top:1.5mm;
-                       width:1.7mm; height:1.7mm; border-radius:50%; background:var(--ink); border:none; }
-  /* level 2: ➢ arrows, regular weight */
-  ul.l2 { list-style:none; margin:1mm 0 0 4mm; }
-  ul.l2 > li { position:relative; padding-left:6mm; margin-bottom:.45mm;
-               font-size:8.3pt; line-height:1.36; font-weight:400; }
-  ul.l2 > li::before { content:""; position:absolute; left:.4mm; top:1.25mm;
-                       width:0; height:0; background:none; border-radius:0;
-                       border-left:2.1mm solid var(--gold-ink);
-                       border-top:1.05mm solid transparent; border-bottom:1.05mm solid transparent; }
+  ul.l1 > li { position:relative; padding-left:6.2mm; margin-bottom:1.45mm;
+               font-size:8.5pt; line-height:1.4; font-weight:700; }
+  ul.l1 > li:last-child { margin-bottom:0; }
+  ul.l1 > li::before { content:""; position:absolute; left:1.5mm; top:1.7mm;
+                       width:1.8mm; height:1.8mm; border-radius:50%;
+                       background:var(--band); border:none; }
 
-  table.acct { width:100%; border-collapse:collapse; margin-top:3mm;
-               border:.4mm solid var(--band); }
-  table.acct th { background:var(--band); color:#fff; font-size:7pt; font-weight:700;
-                  letter-spacing:.13em; text-transform:uppercase; padding:2mm 3mm; text-align:left; }
+  ul.l2 { list-style:none; margin:1mm 0 0 4mm; }
+  ul.l2 > li { position:relative; padding-left:6mm; margin-bottom:.4mm;
+               font-size:8.3pt; line-height:1.36; font-weight:400; color:var(--ink); }
+  ul.l2 > li:last-child { margin-bottom:0; }
+  ul.l2 > li::before { content:""; position:absolute; left:.5mm; top:1.42mm;
+                       width:0; height:0; background:none; border-radius:0;
+                       border-left:2.2mm solid var(--gold-ink);
+                       border-top:1.1mm solid transparent; border-bottom:1.1mm solid transparent; }
+
+  /* ---- account ---- */
+  .acct-wrap { margin-top:3.2mm; border-radius:1.2mm; overflow:hidden;
+               border:.25mm solid var(--line); }
+  table.acct { width:100%; border-collapse:collapse; }
+  table.acct th { background:var(--band); color:#fff; font-size:6.7pt; font-weight:700;
+                  letter-spacing:.17em; text-transform:uppercase; padding:1.8mm 4mm; text-align:left; }
   table.acct th.r, table.acct td.r { text-align:right; }
-  table.acct td { font-size:8.4pt; padding:1.2mm 3mm; border-bottom:.2mm solid var(--line); }
+  table.acct td { font-size:8.4pt; padding:1.05mm 4mm; border-bottom:.2mm solid var(--line); }
+  table.acct tbody tr:nth-child(even) td { background:#FBFAF8; }
   table.acct td.r { font-variant-numeric:tabular-nums; white-space:nowrap; }
-  table.acct col.money { width:30mm; }
-  table.acct tr.total td { background:var(--paper); font-weight:700; font-size:8.8pt;
-                           border-top:.4mm solid var(--band); border-bottom:none; padding:1.8mm 3mm; }
+  table.acct col.money { width:29mm; }
+  table.acct tr.total td { background:var(--band); color:#fff; font-weight:700;
+                           font-size:8.8pt; border-bottom:none; padding:1.9mm 4mm;
+                           letter-spacing:.04em; }
+
+  /* ---- sign-off ---- */
+  .signoff { margin-top:3mm; font-size:8.5pt; line-height:1.45; }
+  .signoff .firm { font-weight:700; letter-spacing:.06em; margin-top:2.2mm; }
+  .signoff .per { font-size:8.1pt; color:var(--soft); margin-top:.5mm; }
 </style>
 </head>
 <body>
@@ -73,18 +96,22 @@
     </div>
     <div class="lh-div"></div>
     <div class="lh-contact">
-      <div class="r"><span class="i">☎</span><span>060&nbsp;981&nbsp;3036</span></div>
-      <div class="r"><span class="i">✉</span><span>hesca@haattorneys.co.za</span></div>
-      <div class="r"><span class="i">⌂</span><span>59 Bolo Street, Moreleta Park<br>Pretoria, 0181</span></div>
+      <div class="r"><span class="i">☎</span><span>060&nbsp;981&nbsp;3036 &nbsp;·&nbsp; 083&nbsp;619&nbsp;2313</span></div>
+      <div class="r"><span class="i">✉</span><span>hesca@haattorneys.co.za&nbsp; ·&nbsp; maryke@haattorneys.co.za</span></div>
+      <div class="r"><span class="i">⌂</span><span>59 Bolo Street, Moreleta Park, Pretoria, 0181</span></div>
     </div>
   </div>
 
-  <div class="contact-line">
-    060 981 3036; 083 619 2313<br>
-    Email: <a href="mailto:hesca@haattorneys.co.za">hesca@haattorneys.co.za</a>; <a href="mailto:maryke@haattorneys.co.za">maryke@haattorneys.co.za</a>
+  <div class="ref">
+    <div class="cell"><span class="k">Attention</span><span class="v">[Client name]</span></div>
+    <div class="cell"><span class="k">Our ref</span><span class="v">[Reference]</span></div>
+    <div class="cell"><span class="k">Date</span><span class="v">[Date]</span></div>
   </div>
 
-  <div class="title">Registration of an Inter Vivos Trust</div>
+  <div class="title">
+    <h1>Registration of an Inter Vivos Trust</h1>
+    <div class="u"></div>
+  </div>
 
   <p>We refer to the above and would like to thank you for entrusting our Firm with the establishment of your trust. We realise that you might be unfamiliar with the trust registration process and would like to brief you in an attempt to better your understanding in the process.</p>
 
@@ -125,21 +152,29 @@
 
   <p>Once we have received the above information and documentation, we will be able to proceed with preparing the draft trust deed for your consideration. Once the trust deed and supporting documentation have been signed and completed, the application will be prepared for submission to the Master of the High Court having jurisdiction. The Master will consider the application, and once the requirements have been satisfied, issue Letters of Authority to the appointed trustees.</p>
 
-  <table class="acct">
-    <colgroup><col><col class="money"><col class="money"></colgroup>
-    <thead>
-      <tr><th>Description</th><th class="r">Debit</th><th class="r">Credit</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Professional Fee – Opening of Trust File</td><td class="r">4 000.00</td><td class="r"></td></tr>
-      <tr><td>Professional Fee – Drafting of Trust Deed and Registration</td><td class="r">12 375.00</td><td class="r"></td></tr>
-      <tr><td>Compliance – FICA Identification and Verification</td><td class="r">2 000.00</td><td class="r"></td></tr>
-      <tr><td>Disbursements – Master of the High Court Registration Fee</td><td class="r">250.00</td><td class="r"></td></tr>
-      <tr><td>To Postage and Petties</td><td class="r">1 500.00</td><td class="r"></td></tr>
-      <tr><td>To Master of the High Court Runner's Fee (current rate)</td><td class="r">1 875.00</td><td class="r"></td></tr>
-      <tr class="total"><td>TOTAL AMOUNT DUE</td><td class="r">22 000.00</td><td class="r"></td></tr>
-    </tbody>
-  </table>
+  <div class="acct-wrap">
+    <table class="acct">
+      <colgroup><col><col class="money"><col class="money"></colgroup>
+      <thead>
+        <tr><th>Description</th><th class="r">Debit</th><th class="r">Credit</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Professional Fee – Opening of Trust File</td><td class="r">4 000.00</td><td class="r"></td></tr>
+        <tr><td>Professional Fee – Drafting of Trust Deed and Registration</td><td class="r">12 375.00</td><td class="r"></td></tr>
+        <tr><td>Compliance – FICA Identification and Verification</td><td class="r">2 000.00</td><td class="r"></td></tr>
+        <tr><td>Disbursements – Master of the High Court Registration Fee</td><td class="r">250.00</td><td class="r"></td></tr>
+        <tr><td>To Postage and Petties</td><td class="r">1 500.00</td><td class="r"></td></tr>
+        <tr><td>To Master of the High Court Runner's Fee (current rate)</td><td class="r">1 875.00</td><td class="r"></td></tr>
+        <tr class="total"><td>Total amount due</td><td class="r">22 000.00</td><td class="r"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="signoff">
+    <p style="text-align:left;">Should you have any queries regarding any part of the process, please do not hesitate to contact us.</p>
+    <div class="firm">H ANNANDALE ATTORNEYS INC.</div>
+    <div class="per">Per: <span style="color:#AEB5BC;font-style:italic;">[Name]</span></div>
+  </div>
 
   <!-- ============ footer bands ============ -->
   <div class="foot">
