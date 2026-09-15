@@ -74,6 +74,7 @@ logo ever needs to appear large.
 
 | File | What it is |
 |---|---|
+| `../letters/transfer-process.html` | Transfer of Property — the Process, Step by Step. Client-facing guide: nine numbered steps with indicative timings and what is needed from the client, the three-attorney explanation, causes of delay, and a payment-fraud warning. Two pages. |
 | `../letters/trust-letter.html` | Registration of an Inter Vivos Trust — **faithful reproduction** of the firm's own letter: same wording, same bullet structure, same Debit/Credit fee table (R 22 000.00). Only the typos below were fixed. |
 | `../invoices/invoice-doc.html` | Tax invoice MD1 — Maryke → H Annandale, R 28 517.40 |
 | `../invoices/invoice.js` | Word version of the invoice (`node invoice.js setup\|blank`) |
