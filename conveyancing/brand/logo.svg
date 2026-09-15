@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 112" fill="none" aria-label="H Annandale Attorneys">
+  <!-- gable / roof, eaves overhanging the posts -->
+  <path d="M8 53 L60 11 L112 53" stroke="currentColor" stroke-width="10.5" stroke-linejoin="miter" stroke-linecap="butt"/>
+  <!-- posts: thick, tucked under the eaves, splaying slightly at the foot -->
+  <path d="M27 46 L39.5 46 L36.5 105 L22.5 105 Z" fill="currentColor"/>
+  <path d="M80.5 46 L93 46 L97.5 105 L83.5 105 Z" fill="currentColor"/>
+  <!-- window: 2 x 2, sitting under the apex -->
+  <rect x="51.2" y="26" width="8"   height="8"   fill="currentColor"/>
+  <rect x="61.4" y="26" width="8"   height="8"   fill="currentColor"/>
+  <rect x="51.2" y="36.2" width="8" height="8"   fill="currentColor"/>
+  <rect x="61.4" y="36.2" width="8" height="8"   fill="currentColor"/>
+  <!-- crossbar of the H: wide block, small block, wide block -->
+  <rect x="39"   y="63" width="14" height="13.5" fill="currentColor"/>
+  <rect x="56.3" y="63" width="8.4" height="13.5" fill="currentColor"/>
+  <rect x="68"   y="63" width="14" height="13.5" fill="currentColor"/>
+</svg>
