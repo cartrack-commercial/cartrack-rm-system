@@ -8,7 +8,7 @@ const {
 // node invoice.js blank   -> an empty template to reuse for any job
 const FILLED = process.argv[2] !== 'blank';
 
-const NAVY = '17263A', GOLD = 'B58C4B', INK = '1B2B40', SOFT = '55647A',
+const NAVY = '333E48', GOLD = 'C2A56E', INK = '1B2B40', SOFT = '55647A',
       FAINT = '93A0B2', LINE = 'E3DDD2', PAPER = 'FAF8F4';
 const SERIF = 'Times New Roman', SANS = 'Arial';
 const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
