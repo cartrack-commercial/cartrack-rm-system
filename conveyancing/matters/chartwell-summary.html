@@ -4,7 +4,24 @@
 <meta charset="utf-8">
 <title>Deed of Sale — Summary of Terms | Holding 34 Chartwell</title>
 <link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../brand/brand.css">
 <style>
+  .lh { padding:4.5mm 8mm; margin-bottom:0; gap:6mm; align-items:center; }
+  .lh-mark { width:15.2mm; }
+  .lh-name { font-size:15.5pt; letter-spacing:.18em; }
+  .lh-sub { font-size:6.4pt; letter-spacing:.33em; }
+  .lh-contact { font-size:7.5pt; line-height:1.62; white-space:nowrap; }
+  .foot { padding-top:2mm; }
+  .foot-note { margin-bottom:1.5mm; text-align:left; }
+  .strip { display:flex; justify-content:space-between; align-items:baseline; gap:8mm;
+           border-bottom:.25mm solid #E3DDD2; padding:2.6mm .5mm 2.2mm; margin-bottom:1mm; }
+  .strip-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:14pt; font-weight:600;
+             color:#333E48; letter-spacing:.02em; white-space:nowrap; }
+  .strip-m { display:flex; gap:6mm; flex-wrap:wrap; justify-content:flex-end; }
+  .strip-m .cell { display:flex; gap:2mm; align-items:baseline; }
+  .strip-m .k { font-size:6.4pt; letter-spacing:.15em; text-transform:uppercase; color:#93A0B2; }
+  .strip-m .v { font-size:8.2pt; font-weight:600; color:#1B2B40; white-space:nowrap; }
+
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -69,20 +86,20 @@
 
   /* ---- bullets ---- */
   ul { list-style:none; margin-top:1mm; }
-  li { font-size:8.5pt; line-height:1.48; color:var(--ink); padding-left:5mm;
-       position:relative; margin-bottom:1mm; }
+  li { font-size:8.4pt; line-height:1.42; color:var(--ink); padding-left:5mm;
+       position:relative; margin-bottom:.7mm; }
   li::before { content:""; position:absolute; left:0; top:1.9mm; width:1.6mm; height:1.6mm;
                border-radius:50%; background:var(--gold); }
   li b { font-weight:700; }
 
   /* ---- attention cards ---- */
   .flag { background:var(--red-soft); border-left:1mm solid var(--red); border-radius:1.4mm;
-          padding:2.7mm 3.8mm; margin-bottom:2.1mm; }
+          padding:2.3mm 3.6mm; margin-bottom:1.7mm; }
   .flag .ft { font-size:7.2pt; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
               color:var(--red); margin-bottom:.9mm; }
-  .flag p { font-size:8.3pt; line-height:1.48; color:#5A3B36; }
-  .note { background:var(--paper); border-radius:1.4mm; padding:2.7mm 3.8mm; }
-  .note p { font-size:8.2pt; color:var(--soft); line-height:1.5; }
+  .flag p { font-size:8.2pt; line-height:1.42; color:#5A3B36; }
+  .note { background:var(--paper); border-radius:1.4mm; padding:2.3mm 3.6mm; }
+  .note p { font-size:8.1pt; color:var(--soft); line-height:1.44; }
   .note b { color:var(--ink); }
 
   /* ---- footer ---- */
@@ -98,30 +115,40 @@
 <!-- ============================= PAGE 1 ============================= -->
 <div class="pg">
 
-  <div class="hd">
-    <div>
-      <div class="firm">H&nbsp;ANNANDALE</div>
-      <div class="firm-sub">Attorneys Inc.</div>
-      <div class="addr">
-        59 Bolo Street, Moreleta Park<br>
-        Pretoria, 0181<br>
-        maryke@haattorneys.co.za<br>
-        083 619 2313
-      </div>
+  <div class="lh">
+    <svg class="lh-mark" viewBox="0 0 120 112" fill="none">
+      <path d="M8 53 L60 11 L112 53" stroke="currentColor" stroke-width="10.5" stroke-linejoin="miter"/>
+      <path d="M27 46 L39.5 46 L36.5 105 L22.5 105 Z" fill="currentColor"/>
+      <path d="M80.5 46 L93 46 L97.5 105 L83.5 105 Z" fill="currentColor"/>
+      <rect x="51.2" y="26" width="8" height="8" fill="currentColor"/>
+      <rect x="61.4" y="26" width="8" height="8" fill="currentColor"/>
+      <rect x="51.2" y="36.2" width="8" height="8" fill="currentColor"/>
+      <rect x="61.4" y="36.2" width="8" height="8" fill="currentColor"/>
+      <rect x="39" y="63" width="14" height="13.5" fill="currentColor"/>
+      <rect x="56.3" y="63" width="8.4" height="13.5" fill="currentColor"/>
+      <rect x="68" y="63" width="14" height="13.5" fill="currentColor"/>
+    </svg>
+    <div class="lh-id">
+      <div class="lh-name">H&nbsp;ANNANDALE</div>
+      <div class="lh-sub">Attorneys Inc.</div>
     </div>
-    <div class="hd-r">
-      <div class="doc-t">Deed of Sale<br>Summary of Terms</div>
-      <div class="doc-rule"></div>
-      <div class="meta">
-        <div class="k">Property</div><div class="v">Holding 34 Chartwell</div>
-        <div class="k">Agent's ref</div><div class="v">260311-4938</div>
-        <div class="k">Date</div><div class="v">15 September 2026</div>
-        <div class="k">Prepared by</div><div class="v">Maryke Dique</div>
-      </div>
+    <div class="lh-div"></div>
+    <div class="lh-contact">
+      <div class="r"><span class="i">☎</span><span>060&nbsp;981&nbsp;3036 &nbsp;·&nbsp; 083&nbsp;619&nbsp;2313</span></div>
+      <div class="r"><span class="i">✉</span><span>hesca@haattorneys.co.za&nbsp; ·&nbsp; maryke@haattorneys.co.za</span></div>
+      <div class="r"><span class="i">⌂</span><span>59 Bolo Street, Moreleta Park, Pretoria, 0181</span></div>
     </div>
   </div>
 
-  <div class="band"></div>
+  <div class="strip">
+    <div class="strip-t">Deed of Sale &mdash; Summary of Terms</div>
+    <div class="strip-m">
+      <div class="cell"><span class="k">Property</span><span class="v">Holding 34 Chartwell</span></div>
+      <div class="cell"><span class="k">Agent's ref</span><span class="v">260311-4938</span></div>
+      <div class="cell"><span class="k">Date</span><span class="v">15 September 2026</span></div>
+      <div class="cell"><span class="k">Prepared by</span><span class="v">Maryke Dique</span></div>
+    </div>
+  </div>
 
   <div class="sec">The parties</div>
   <div class="rows">
@@ -247,10 +274,11 @@
     <p>• Clause 4 runs <b>4.1</b> and then <b>3.2</b> — the second should read 4.2. &nbsp;• Clause <b>5.5</b> refers to “this clause 4” while sitting in clause 5. &nbsp;• Clause <b>10</b> is headed Risk and Possession but its sub-clauses are numbered 9.1 to 9.3. &nbsp;• Clause <b>19</b> appears twice — Sections 112 and 115 of the Companies Act, and again as Nominee. &nbsp;• Clause 10.1 cross-refers to “clauses 1.1 and 1.3”, which on their content appear to be clauses 2.1 and 2.3. &nbsp;• The trust and close corporation resolutions at pages 20 and 22 each number both items “1.” and “3.” respectively, and are struck through as not applicable.</p>
   </div>
 
-  <div class="ft-bar">
-    <div class="l"><b>H Annandale Attorneys Inc.</b> &nbsp;·&nbsp; 59 Bolo Street, Moreleta Park, Pretoria, 0181 &nbsp;·&nbsp; Prepared by Maryke Dique, 15 September 2026<br>
-      This summary is prepared for file purposes from the scanned agreement and does not replace the signed original. Where the two differ, the signed agreement prevails.</div>
-    <div class="r">2</div>
+  <div class="foot">
+    <div class="foot-note">Prepared by Maryke Dique, 15 September 2026. This summary is prepared for file purposes from the
+      scanned agreement and does not replace the signed original. Where the two differ, the signed agreement prevails.</div>
+    <div class="foot-reg">H ANNANDALE ATTORNEYS INC. &nbsp;|&nbsp; REGISTRATION NUMBER: 2026/219692/21</div>
+    <div class="foot-dir">Director: H Annandale LLB (NWU)</div>
   </div>
 </div>
 
