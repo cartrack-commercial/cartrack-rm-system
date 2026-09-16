@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tax Invoice MD1 — Maryke Dique</title>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../brand/brand.css">
+<style>
+  .sheet { padding:9mm 14mm 7mm; }
+  table.fees td { padding:1.55mm 3.4mm; font-size:8.6pt; }
+  .lh { justify-content:space-between; padding:5mm 9mm; margin-bottom:4.4mm; }
+  .lh-id { text-align:left; }
+  .lh-name { font-size:16pt; letter-spacing:.2em; }
+  .lh-contact { text-align:right; font-size:8.2pt; line-height:1.75; }
+
+  .strap { display:flex; justify-content:space-between; align-items:flex-start; gap:10mm; }
+  .doc-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:24pt; font-weight:600;
+           letter-spacing:.08em; color:var(--band); line-height:1; }
+  .meta { display:grid; grid-template-columns:auto auto; gap:1.1mm 6mm; justify-content:end; }
+  .meta .k { font-size:6.7pt; letter-spacing:.13em; text-transform:uppercase;
+             color:var(--faint); text-align:right; padding-top:.4mm; }
+  .meta .v { font-size:9pt; font-weight:600; text-align:right; }
+  .gold-rule { height:.5mm; background:var(--gold); margin:3.2mm 0 3.4mm; }
+
+  .parties { display:flex; gap:6mm; }
+  .party { flex:1; }
+  .party.box { background:var(--paper); border-radius:1.4mm; padding:3.2mm 4mm; }
+  .lb { font-size:6.7pt; font-weight:700; letter-spacing:.22em; text-transform:uppercase;
+        color:var(--gold-ink); margin-bottom:2.4mm; }
+  .pn { font-size:10.5pt; font-weight:700; margin-bottom:1.4mm; }
+  .pl { font-size:8.6pt; color:var(--soft); line-height:1.6; }
+  .kv { display:flex; gap:3mm; font-size:8.5pt; line-height:1.5; margin-bottom:.8mm; }
+  .kv .k { color:var(--faint); min-width:20mm; }
+  .kv .v { flex:1; }
+
+  table.fees { margin-top:0; }
+  .totals { margin:2.8mm 0 0 auto; width:88mm; }
+  .tr { display:flex; justify-content:space-between; padding:1.6mm 3.4mm;
+        font-size:8.8pt; color:var(--soft); }
+  .tr.sub { border-top:.3mm solid var(--line); }
+  .tr.grand { background:var(--band); color:#fff; border-radius:1.4mm; margin-top:1.4mm;
+              padding:2.8mm 3.4mm; }
+  .tr.grand .k { font-size:8.6pt; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+  .tr.grand .v { font-family:'Cormorant Garamond',Georgia,serif; font-size:15pt; font-weight:700; }
+
+  .pay { background:var(--paper); border-radius:1.4mm; padding:3.6mm 4.4mm;
+         width:calc(50% - 3mm); margin-top:5mm; }
+  .bank { display:flex; gap:3mm; font-size:8.4pt; line-height:1.62; }
+  .bank .k { font-size:6.7pt; letter-spacing:.13em; text-transform:uppercase;
+             color:var(--faint); min-width:26mm; padding-top:.9mm; }
+  .bank .v { font-weight:700; }
+  .pay-note { font-size:7.6pt; color:var(--soft); font-style:italic;
+              margin-top:1.8mm; line-height:1.45; }
+  .foot-one { background:var(--band); color:#F1EEE8; text-align:center; border-radius:1mm;
+              font-size:7.8pt; letter-spacing:.05em; padding:2.4mm 4mm; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="lh">
+    <div class="lh-id">
+      <div class="lh-name">MARYKE&nbsp;DIQUE</div>
+      <div class="lh-sub">Conveyancing</div>
+    </div>
+    <div class="lh-contact">
+      673B Skukuza Street, Faerie Glen, Pretoria, 0081<br>
+      maryke@haattorneys.co.za &nbsp;·&nbsp; 083&nbsp;619&nbsp;2313
+    </div>
+  </div>
+
+  <div class="strap">
+    <div></div>
+    <div style="text-align:right;">
+      <div class="doc-t">TAX INVOICE</div>
+    </div>
+  </div>
+  <div class="gold-rule"></div>
+
+  <div class="strap" style="margin-top:-2mm;">
+    <div style="flex:1;"></div>
+    <div class="meta">
+      <div class="k">Invoice no.</div><div class="v">MD1</div>
+      <div class="k">Date</div><div class="v">21 August 2026</div>
+      <div class="k">Prepared by</div><div class="v">Maryke Dique</div>
+    </div>
+  </div>
+
+  <div class="parties" style="margin-top:3.6mm;">
+    <div class="party">
+      <div class="lb">Invoice to</div>
+      <div class="pn">H Annandale Attorneys Inc.</div>
+      <div class="pl">
+        Attention: Hesca Annandale<br>
+        59 Bolo Street, Moreleta Park<br>
+        Pretoria, 0181<br>
+        hesca@haattorneys.co.za
+      </div>
+    </div>
+    <div class="party box">
+      <div class="lb">The engagement</div>
+      <div class="kv"><div class="k">Service</div><div class="v">Assisting in new firm setup</div></div>
+      <div class="kv"><div class="k">Scope</div><div class="v">Practice registrations, clearance portals, systems and office establishment</div></div>
+      <div class="kv"><div class="k">Period</div><div class="v">August 2026</div></div>
+      <div class="kv" style="margin-bottom:0;"><div class="k">Status</div><div class="v">Completed</div></div>
+    </div>
+  </div>
+
+  <div class="sec">Services rendered</div>
+  <table class="fees">
+    <thead><tr><th>Description</th><th class="r" style="width:32mm;">Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Consulting fee in respect of firm requirements</td><td class="r">R 2 017.40</td></tr>
+      <tr><td>E4 registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>Lexpro registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>SearchWorks registration</td><td class="r">R 3 000.00</td></tr>
+      <tr><td>e-Tshwane clearance portal setup</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Ekurhuleni clearance portal setup</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Email set-up</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Letterhead and logo design</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Email signature design</td><td class="r">R 2 000.00</td></tr>
+      <tr><td>Correspondent research and lodgement arrangements</td><td class="r">R 2 500.00</td></tr>
+      <tr><td>Office setup and purchasing of office supplies</td><td class="r">R 5 000.00</td></tr>
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="tr sub"><div class="k">Subtotal</div><div class="v">R 28 517.40</div></div>
+    <div class="tr grand"><div class="k">Total due</div><div class="v">R 28 517.40</div></div>
+  </div>
+
+  <div class="pay">
+    <div class="lb">Payment details</div>
+    <div class="bank"><div class="k">Account holder</div><div class="v">Maryke Dique</div></div>
+    <div class="bank"><div class="k">Bank</div><div class="v">ABSA</div></div>
+    <div class="bank"><div class="k">Account number</div><div class="v">9153076436</div></div>
+    <div class="bank"><div class="k">Branch code</div><div class="v">632005</div></div>
+    <div class="bank"><div class="k">Reference</div><div class="v">MD1</div></div>
+    <div class="pay-note">Please use reference <b>MD1</b> when paying and email proof of payment to maryke@haattorneys.co.za.</div>
+  </div>
+
+  <div class="foot">
+    <div class="foot-one">MARYKE DIQUE &nbsp;·&nbsp; 673B Skukuza Street, Faerie Glen, Pretoria, 0081 &nbsp;·&nbsp; 083 619 2313 &nbsp;·&nbsp; E &amp; OE</div>
+  </div>
+</div>
+</body>
+</html>
