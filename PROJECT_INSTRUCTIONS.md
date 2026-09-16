@@ -46,3 +46,16 @@ That handoff (RM System ↔ quoting portal) is the real integration to build.
   `pack-builder/PROJECT_INSTRUCTIONS.md` and `pack-builder/HANDOFF.md`.
 - Quoting portal UI: `cartrack-premium-comparison/tool.html`.
 - This app: `cartrack-rm-system/index.html`.
+
+## Performance Intelligence (`intelligence.html`)
+Management-only analytics pack (the actuary's "Performance Intelligence" coding, pointed at the RM
+division). It has **no data access of its own**: Command View's **📈 Intelligence** tab runs
+`openIntelligence()`, which loads every RM's deals, lost lists, the full change journal, every book
+and every payroll month, writes one read-only snapshot to `sessionStorage['ct-pi-payload']` and
+navigates to `./intelligence.html` in the same tab. Rules that must hold:
+- Salaries and passcodes are never in the payload (payroll rows are trimmed to client/rm/premium/
+  insurer/policy; `S.meta` is read only for `piTarget`, the new-business target in rand a month).
+- The page never writes back. It replays the change journal per deal to recover stage dates,
+  exactly as the Recovery tab does, so journal wording changes must be mirrored in its `parseJ`.
+- `?demo=1` renders a fictional roster; `#smoke` runs the self-check. Keep `intelligence.html` in
+  the service-worker SHELL list and bump the cache name when it changes.

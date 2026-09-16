@@ -1189,7 +1189,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.27a';
+  const APP_VERSION='v2026.09.07';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
@@ -2028,6 +2028,28 @@ async function resolveOrg(){
   }
 
   // ================= COMMAND VIEW (Brendan) =================
+  // ── Performance Intelligence hand-off ──────────────────────────────────────────
+  // Command View assembles one read-only snapshot of everything the intelligence pack
+  // needs (pipeline, lost, journal, book, payroll client rows) and leaves it in
+  // sessionStorage for ./intelligence.html, which renders from it in the same tab.
+  // Nothing is written back, salaries and passcodes are never included, and the
+  // snapshot dies with the tab.
+  async function openIntelligence(){
+    toast('Preparing the intelligence pack\u2026');
+    try{
+      await Promise.all([loadAll(),loadAllPortfolio(),loadAllLost(),loadHouse()]);
+      const [journal,payrolls]=await Promise.all([sGet('changes:'),sGet('payrolls:')]);
+      const deals=[];RMS.concat([{slug:'__house'}]).forEach(r=>(S.deals[r.slug]||[]).forEach(d=>deals.push(Object.assign({},d,{rm:r.slug}))));
+      const portfolio=[];RMS.forEach(r=>(S.portfolio[r.slug]||[]).forEach(p=>portfolio.push(Object.assign({},p,{rm:r.slug}))));
+      const lost={};RMS.forEach(r=>{lost[r.slug]=S.lost[r.slug]||[];});
+      const payload={v:1,at:nowISO(),viewer:viewerName(),roster:RMS.map(r=>({slug:r.slug,name:r.name,full:r.full})),
+        deals,lost,journal:journal||[],portfolio,
+        payroll:(payrolls||[]).map(p=>({month:p.month,rows:(p.rows||[]).map(x=>({client:x.client,rm:x.rm,premium:x.premium,insurer:x.insurer,policy:x.policy}))})),
+        settings:{target:+((S.meta||{}).piTarget)||null}};
+      sessionStorage.setItem('ct-pi-payload',JSON.stringify(payload));
+      location.href='./intelligence.html';
+    }catch(e){toast('Could not prepare the pack: '+(e&&e.message||e));}
+  }
   function renderCmd(){
     root.innerHTML=`
       <div class="hdr hdr-cmd">
@@ -2043,6 +2065,7 @@ async function resolveOrg(){
           <button class="tab ${S.tab==='lost'?'active':''}" id="t-ls">Not Successful</button>
           <button class="tab ${S.tab==='changes'?'active':''}" id="t-ch">Yesterday</button>
           <button class="tab ${S.tab==='recovery'?'active':''}" id="t-rc">Recovery</button>
+          <button class="tab" id="t-pi" title="Performance Intelligence: the pipeline through the actuary's lens">\u{1F4C8} Intelligence</button>
           <button class="tab ${S.tab==='settings'?'active':''}" id="t-se">Access</button>
         </div>
       </div><div id="body"></div>${S.modal?renderModal():''}${S.confirmModal?renderConfirmModal():''}${S.toast?`<div class="toast">${esc(S.toast)}</div>`:''}`;
@@ -2056,6 +2079,7 @@ async function resolveOrg(){
     document.getElementById('t-ch').onclick=()=>{S.tab='changes';render();};
     document.getElementById('t-rc').onclick=async()=>{await lostReady();S.tab='recovery';S._recovery=null;render();};
     document.getElementById('t-se').onclick=()=>{S.tab='settings';render();};
+    document.getElementById('t-pi').onclick=openIntelligence;
     const body=document.getElementById('body');
     if(S.tab==='overview'){body.innerHTML=cmdOverview();wireCmdOverview();}
     else if(S.tab==='clients'){body.innerHTML=cmdClients();wireCmdClients();}
