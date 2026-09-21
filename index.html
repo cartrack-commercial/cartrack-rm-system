@@ -387,9 +387,11 @@ async function resolveOrg(){
   const STAGE_PHRASES={"1":["Cartrack data logs cross-referenced; cold outreach initiated to [Contact Name].","Followed up on initial contact\u2014awaiting callback from the decision maker.","First-round discovery call completed; qualifying corporate fleet and property assets."],"2":["Introductory meeting set up with MD/Financial Director for [Date].","Discovery session confirmed with [Contact Name] at [Company] for [Date].","Pre-meeting research complete; prepared questions on fleet size and current cover."],"3":["Requested current policy schedules, asset registers, and claims history from client.","Awaiting signed Broker Appointment Letter / Mandate to request internal insurer records.","Followed up with client for missing vehicle asset register/building valuation certificates."],"4":["Received policy schedules and claims history; currently reviewing for gaps.","All required documentation now in hand; analyzing 3-to-5-year claims history.","Risk profile compiled; identifying coverage gaps and premium optimization opportunities."],"5":["Risk profile compiled and formally submitted to the underwriting market.","Awaiting competitive quote iterations from specialized commercial insurers.","Negotiating premium rates and policy excess structures with underwriters.","Reviewing initial market quotes to ensure all fleet/asset risks are adequately covered."],"6":["Commercial comparison framework and proposal deck currently being compiled.","Closing meeting set up to present our comprehensive commercial proposal on [Date].","Proposal presented; currently awaiting formal C-suite feedback / sign-off.","Addressing specific coverage/pricing queries raised by the client's legal/finance team."],"7":["Proposal accepted! Collecting final FICA and FAIS compliance documentation.","Policy takeover documents signed; coordinating effective transfer date with insurers.","Takeover finalized; scheduling first post-inception portfolio review with the client."]};
   const ACTIVITY_TYPES=[{k:'visit',label:'Client visit / review',icon:'\u{1F91D}'},{k:'claim',label:'Claim logged',icon:'\u{1F4CB}'},{k:'vehicle',label:'Vehicle / asset added',icon:'\u{1F697}'},{k:'endorsement',label:'Endorsement / cover change',icon:'\u{1F4DD}'},{k:'call',label:'Call / email',icon:'\u{1F4DE}'},{k:'note',label:'General note',icon:'\u{1F4AC}'}];
   const OPERATOR_CODE='301020';   // Annè + Brendan — shared system master key. Opens any login without touching PINs.
-  // Operator master keys — each opens any view without changing anyone's PIN.
-  // Annè & Brendan share 301020; leadership has his own so it can be
-  // tracked/rotated independently. Add or rotate a key by editing this map.
+  // Operator master keys, each opens any view without changing anyone's PIN.
+  // Annè & Brendan share one key; leadership holds a second so it can be
+  // tracked and rotated independently. Add or rotate a key by editing this map.
+  // Label by role, never by a person's name. The label is stored on S._operator
+  // and is never rendered, so it is free to change.
   const MASTER_KEYS={'301020':'Annè & Brendan','680410':'Leadership'};
   const isMasterKey=v=>Object.prototype.hasOwnProperty.call(MASTER_KEYS,String(v||''));
   const DEFAULT_MONTH='2026-06';   // The month the app opens on (June actuals — what the team knows). Change to go live on a new month.
@@ -1189,7 +1191,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.08.27a';
+  const APP_VERSION='v2026.09.21a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
