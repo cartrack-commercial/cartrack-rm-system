@@ -693,7 +693,10 @@ async function resolveOrg(){
     // one at a time, and that must not trip an alarm.
     if(!Array.isArray(prev)||prev.length<3)return null;
     if(v.length===0)return `would empty ${prev.length} row(s)`;
-    if(prev.length>=4&&v.length<Math.ceil(prev.length/2))return `would drop ${prev.length-v.length} of ${prev.length} row(s)`;
+    // <= not <: 6 rows down to 3 is exactly half and used to pass. That is precisely
+    // how Bronwan's book went from 6 clients to 3 on 21 Sep 2026. Deleting one row at a
+    // time still works at every size, because each single step stays above the line.
+    if(prev.length>=4&&v.length<=Math.ceil(prev.length/2))return `would drop ${prev.length-v.length} of ${prev.length} row(s)`;
     return null;
   }
   async function _snapshot(k){
@@ -701,7 +704,12 @@ async function resolveOrg(){
     if(!Array.isArray(prev)||!prev.length)return;
     if(_snapAt[k]&&Date.now()-_snapAt[k]<6e5)return;             // at most one per key per 10 min
     _snapAt[k]=Date.now();
-    try{await _sbSetAdopt(_route('config:snapshot:'+k),{key:k,at:nowISO(),rows:prev});}catch(e){}
+    // _sbSetAdopt takes a KEY and routes it itself. Passing _route(...) here meant
+    // _route ran twice, the second call did k.startsWith() on an object, threw, and the
+    // empty catch swallowed it on every single write. Zero snapshots were ever stored
+    // between 12 Aug and 22 Sep 2026 because of this line. Log the failure now.
+    try{await _sbSetAdopt('config:snapshot:'+k,{key:k,at:nowISO(),rows:prev});}
+    catch(e){console.warn('[Cartrack] snapshot failed for',k,e&&e.message);}
   }
   async function sSet(k,v){
     const bad=_guardWrite(k,v);
@@ -1191,7 +1199,7 @@ async function resolveOrg(){
   // ================= GATE =================
   // Build stamp shown on the sign-in card so support can instantly tell which
   // version a device is running. Bump the date whenever a change is pushed.
-  const APP_VERSION='v2026.09.21a';
+  const APP_VERSION='v2026.09.22a';
   function renderGate(){
     if(!S.gateStep){
       root.innerHTML=`<div class="gate">
