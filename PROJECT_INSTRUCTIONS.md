@@ -23,6 +23,9 @@ Hard-won rules baked in — **do not regress**:
 - Auto-refresh on focus/interval; surface failed writes with a banner + retry.
 - Per-RM daily change-log keys; the Recovery tab can replay the surviving journal.
 - Access: masterkey passcodes per RM.
+- **Access codes are never written in plain text in `index.html`.** The repo and the site are public.
+  Fixed codes live as PBKDF2 hashes in `KEY_HASHES`; to rotate one, run `await rmKeyHash('new code')`
+  in the browser console and replace the hash. Bernard's own passcode is saved hashed (`meta.bernardHash`).
 
 ## Golden rules
 1. **Never lose an RM's data.** Data integrity beats every other consideration. When in
